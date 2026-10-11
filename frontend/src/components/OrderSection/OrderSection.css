@@ -1,0 +1,168 @@
+.order-section {
+    margin-top: 30px;
+
+    background-color: var(--card-background);
+
+    border: 1px solid var(--border-color);
+
+    border-radius: 8px;
+
+    box-shadow: var(--card-shadow);
+
+    overflow: hidden;
+}
+
+.order-section__header {
+    padding: 22px 24px;
+
+    border-bottom: 1px solid var(--border-color);
+}
+
+.order-section__header h2 {
+    margin: 0;
+
+    color: var(--text-primary);
+
+    font-size: 18px;
+    font-weight: 650;
+}
+
+.order-section__header p {
+    margin: 6px 0 0;
+
+    color: var(--text-muted);
+
+    font-size: 13px;
+}
+
+.order-section__list {
+    display: flex;
+    flex-direction: column;
+}
+
+.order-item {
+    min-height: 82px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 20px;
+
+    padding: 16px 24px;
+
+    border-bottom: 1px solid var(--border-color);
+
+    transition: background-color 0.2s ease;
+}
+
+.order-item:last-child {
+    border-bottom: none;
+}
+
+.order-item:hover {
+    background-color: var(--row-hover);
+}
+
+.order-item__main,
+.order-item__right {
+    display: flex;
+    align-items: center;
+}
+
+.order-item__main {
+    gap: 14px;
+}
+
+.order-item__right {
+    gap: 24px;
+}
+
+.order-item__icon {
+    width: 40px;
+    height: 40px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 6px;
+
+    background-color: var(--primary-soft);
+
+    color: var(--primary-color);
+}
+
+.order-item__information h3 {
+    margin: 0;
+
+    color: var(--text-primary);
+
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.order-item__information span {
+    display: block;
+
+    margin-top: 5px;
+
+    color: var(--text-muted);
+
+    font-size: 12px;
+}
+
+.order-item__status {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 6px;
+
+    padding: 6px 10px;
+
+    border-radius: 20px;
+
+    background-color: var(--status-pending-background);
+
+    color: var(--status-pending-text);
+
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.order-item__button {
+    display: flex;
+    align-items: center;
+
+    gap: 4px;
+
+    border: none;
+
+    background: transparent;
+
+    color: var(--primary-color);
+
+    font-size: 13px;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.order-item__button:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 700px) {
+
+    .order-item {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+    .order-item__right {
+        width: 100%;
+
+        justify-content: space-between;
+    }
+}
