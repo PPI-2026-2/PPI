@@ -1,0 +1,234 @@
+.employee-layout {
+    --primary-color: #176b9a;
+    --primary-hover: #115879;
+    --primary-soft: rgba(23, 107, 154, 0.10);
+
+    --page-background: #f2f5f7;
+    --navbar-background: #fbfcfd;
+    --sidebar-background: #f8fafb;
+    --card-background: #ffffff;
+
+    --text-primary: #242424;
+    --text-secondary: #505050;
+    --text-muted: #707070;
+
+    --sidebar-text: #505050;
+    --sidebar-section-text: #707070;
+
+    --sidebar-hover: #edf3f6;
+    --sidebar-active: #e3eef4;
+
+    --navbar-hover: #edf3f6;
+
+    --border-color: #e1e5e8;
+
+    --row-hover: #f7f9fb;
+
+    --status-pending-background: #f5efdc;
+    --status-pending-text: #806728;
+
+    --card-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.04);
+
+    --sidebar-shadow:
+        4px 0 12px rgba(0, 0, 0, 0.08);
+
+    min-height: 100vh;
+
+    background-color: var(--page-background);
+
+    color: var(--text-primary);
+
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease;
+}
+
+
+/* IDEAS DE COLOR AZURE: solo cambian la paleta, no el layout */
+
+.employee-layout[data-palette="azure-cloud"] {
+    --primary-color: #386f93;
+    --primary-hover: #2e5e7e;
+    --primary-soft: rgba(56, 111, 147, 0.11);
+    --page-background: #edf2f6;
+    --navbar-background: #f7f9fb;
+    --sidebar-background: #eaf0f5;
+    --sidebar-hover: #e1eaf1;
+    --sidebar-active: #d8e5ef;
+    --navbar-hover: #e7eef4;
+    --border-color: #d8e1e8;
+    --row-hover: #f1f5f8;
+}
+
+.employee-layout[data-palette="azure-portal"] {
+    --primary-color: #0f6cbd;
+    --primary-hover: #115ea3;
+    --primary-soft: rgba(15, 108, 189, 0.10);
+    --page-background: #eaf0f5;
+    --navbar-background: #f9fbfc;
+    --sidebar-background: #e8eff5;
+    --sidebar-hover: #e0ebf4;
+    --sidebar-active: #d4e6f5;
+    --navbar-hover: #e7f0f7;
+    --border-color: #d5dfe7;
+    --row-hover: #f0f5f9;
+}
+
+.employee-layout[data-palette="azure-night"] {
+    --primary-color: #477b89;
+    --primary-hover: #396977;
+    --primary-soft: rgba(71, 123, 137, 0.11);
+    --page-background: #f0eee8;
+    --navbar-background: #faf9f5;
+    --sidebar-background: #e9ece8;
+    --card-background: #fbfaf6;
+    --text-primary: #292f30;
+    --text-secondary: #50595a;
+    --text-muted: #737b79;
+    --sidebar-text: #50595a;
+    --sidebar-section-text: #737b79;
+    --sidebar-hover: #e3e9e6;
+    --sidebar-active: #dce8e6;
+    --navbar-hover: #edf0ec;
+    --border-color: #d9ded9;
+    --row-hover: #f2f2ec;
+    --status-pending-background: #f2ead6;
+    --status-pending-text: #806628;
+    --card-shadow: 0 2px 7px rgba(48, 55, 49, .05);
+    --sidebar-shadow: 4px 0 12px rgba(48, 55, 49, .07);
+}
+
+/* MODO OSCURO */
+
+.employee-layout--dark {
+    --primary-color: #7bb6d6;
+    --primary-hover: #9bc9e0;
+    --primary-soft: rgba(123, 182, 214, 0.14);
+
+    --page-background: #171f25;
+    --navbar-background: #202a31;
+    --sidebar-background: #1d272e;
+    --card-background: #222e36;
+
+    --text-primary: #f1f5f9;
+    --text-secondary: #c7d0d9;
+    --text-muted: #8f9daa;
+
+    --sidebar-text: #c7d0d9;
+    --sidebar-section-text: #8f9daa;
+
+    --sidebar-hover: #293840;
+    --sidebar-active: #2b414e;
+
+    --navbar-hover: #293840;
+
+    --border-color: #2b3946;
+
+    --row-hover: #202f3c;
+
+    --status-pending-background: #3c3728;
+    --status-pending-text: #e3cb82;
+
+    --card-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.25);
+
+    --sidebar-shadow:
+        4px 0 12px rgba(0, 0, 0, 0.25);
+}
+
+
+.employee-layout__body {
+    min-height: calc(100vh - 64px);
+
+    display: flex;
+}
+
+.employee-layout__content {
+    flex: 1;
+
+    min-width: 0;
+
+    padding: 30px;
+
+    background-color: var(--page-background);
+
+    overflow-x: hidden;
+}
+
+
+@media (max-width: 768px) {
+
+    .employee-layout__content {
+        padding: 22px 18px;
+    }
+}
+
+.employee-layout--dark[data-palette="azure-soft"] {
+    --primary-color: #7bb6d6;
+    --primary-hover: #9bc9e0;
+    --primary-soft: rgba(123, 182, 214, .15);
+    --page-background: #171f25;
+    --navbar-background: #202a31;
+    --sidebar-background: #1d272e;
+    --card-background: #222e36;
+    --sidebar-hover: #293840;
+    --sidebar-active: #2b414e;
+    --navbar-hover: #293840;
+    --border-color: #2b3946;
+    --row-hover: #202f3c;
+}
+
+.employee-layout--dark[data-palette="azure-cloud"] {
+    --primary-color: #87bad8;
+    --primary-hover: #a3cde3;
+    --primary-soft: rgba(135, 186, 216, .15);
+    --page-background: #19232c;
+    --navbar-background: #222f3a;
+    --sidebar-background: #202c35;
+    --card-background: #273640;
+    --sidebar-hover: #2d3d48;
+    --sidebar-active: #304a5c;
+    --navbar-hover: #2d3d48;
+    --border-color: #354653;
+    --row-hover: #2a3944;
+}
+
+.employee-layout--dark[data-palette="azure-portal"] {
+    --primary-color: #73b7f2;
+    --primary-hover: #99cbf5;
+    --primary-soft: rgba(115, 183, 242, .15);
+    --page-background: #151f2b;
+    --navbar-background: #1c2a38;
+    --sidebar-background: #192633;
+    --card-background: #223140;
+    --sidebar-hover: #273b4e;
+    --sidebar-active: #29465e;
+    --navbar-hover: #273b4e;
+    --border-color: #304354;
+    --row-hover: #243545;
+}
+
+.employee-layout--dark[data-palette="azure-night"] {
+    --primary-color: #8fc4cf;
+    --primary-hover: #add8df;
+    --primary-soft: rgba(143, 196, 207, .15);
+    --page-background: #18252a;
+    --navbar-background: #202f34;
+    --sidebar-background: #1d2b30;
+    --card-background: #29383b;
+    --text-primary: #eef3ef;
+    --text-secondary: #c7d2ce;
+    --text-muted: #9baaa5;
+    --sidebar-text: #c7d2ce;
+    --sidebar-section-text: #9baaa5;
+    --sidebar-hover: #2b3c40;
+    --sidebar-active: #304a50;
+    --navbar-hover: #2b3c40;
+    --border-color: #3a4a4b;
+    --row-hover: #2b3a3c;
+    --status-pending-background: #443e2f;
+    --status-pending-text: #e5d294;
+    --card-shadow: 0 2px 8px rgba(0, 0, 0, .2);
+    --sidebar-shadow: 4px 0 12px rgba(0, 0, 0, .25);
+}
