@@ -1,37 +1,33 @@
-# Esquema de USUARIO y requisitos
+# Tablas ROL y USUARIO
 
-El esquema completo está guardado en `database/script/stockplan_schema.sql`; `database/script/usuario.sql` contiene las tablas centrales `ROL` y `USUARIO`. El backend actual consulta `USUARIO.ID_USUARIO_PK`, `NOMBRE_US`, `APELLIDO_US`, `EMAIL`, `PASSWORD_HASH`, `ESTADO`, `ID_ROL_FK` y `ROL.NOMBRE_ROL`.
+Esquema Oracle: `STOCKPLAN` (servicio `XEPDB1`). El esquema completo está en
+`database/script/esquema_stockplan.sql`.
 
-Recomendaciones antes de probar el login:
+## ROL
 
-1. `EMAIL` es único según la constraint `USUARIO_EMAIL_UK`.
-2. `PASSWORD_HASH` debe almacenar hashes bcrypt, nunca contraseñas en texto plano. El registro público y el alta administrativa generan bcrypt en el backend.
-3. `ESTADO` esperado para cuenta activa: `ACTIVO`; `INACTIVO` rechaza login.
-4. `ID_ROL_FK` referencia `ROL.ID_ROL_PK`; los roles admitidos son `EMPLEADO`, `USUARIO` y `ADMINISTRADOR`.
-5. Oracle genera `ID_USUARIO_PK` y `ID_ROL_PK` mediante identity; no se usa `SEQ_USUARIO`.
+| Columna | Tipo | Notas |
+|---|---|---|
+| ID_ROL_PK | NUMBER IDENTITY | PK |
+| NOMBRE_ROL | VARCHAR2(50) | Único. `ADMINISTRADOR`, `EMPLEADO` o `USUARIO` |
+| DESCRIPCION | VARCHAR2(100) | Opcional |
 
-El servicio necesita `SELECT` e `INSERT` en `USUARIO` y `SELECT` en `ROL`. La constraint única existente protege correo duplicado concurrente.
+## USUARIO
 
-## Flujo de altas
+| Columna | Tipo | Notas |
+|---|---|---|
+| ID_USUARIO_PK | NUMBER IDENTITY | PK; no se envía en el INSERT |
+| NOMBRE_US | VARCHAR2(50) | Obligatorio |
+| APELLIDO_US | VARCHAR2(50) | Obligatorio |
+| EMAIL | VARCHAR2(100) | Obligatorio y único (el backend lo guarda en minúsculas) |
+| PASSWORD_HASH | VARCHAR2(255) | Hash bcrypt (coste 12) generado por el backend |
+| ESTADO | VARCHAR2(20) | `ACTIVO` (por defecto) o `INACTIVO` |
+| ID_ROL_FK | NUMBER | FK a `ROL.ID_ROL_PK` |
 
-- El formulario público `/registro` solo crea cuentas `USUARIO`; nombre, apellido, correo y contraseña se envían a `POST /api/auth/register`.
-- La API normaliza el correo, valida los campos, almacena bcrypt en `PASSWORD_HASH`, resuelve `ID_ROL_FK` por `NOMBRE_ROL` y deja que Oracle genere el ID.
-- `EMPLEADO` y `ADMINISTRADOR` se crean desde la consola autenticada `/administrador/usuarios`, usando `POST /api/admin/users` que exige rol `ADMINISTRADOR`.
-- Para la primera cuenta administradora (antes de que exista el panel) se ejecuta una vez `npm run bootstrap:admin` en `backend/`. No se escriben contraseñas ni hashes a mano en SQL.
+## Reglas del backend
 
-## Relación de roles actual
-
-El backend ya usa `JOIN ROL` para autenticación, altas administrativas y lista de usuarios.
-
-## Datos de conexión aún requeridos
-
-No incluir secretos en Git ni en el chat. Completar localmente `backend/.env` (copiando `.env.example`) con:
-
-- host y puerto Oracle
-- `SERVICE_NAME` de la PDB (o connect string completo); ej. `localhost:1521/XEPDB1` es solo ejemplo
-- usuario de BD con permiso mínimo de `SELECT` sobre la tabla
-- contraseña de ese usuario
-- origen local/frontend permitido por CORS
-- `JWT_SECRET` aleatorio de al menos 32 bytes
-
-El proyecto no puede conectar todavía hasta completar esas variables y confirmar que Oracle está escuchando y que las contraseñas de la tabla están hasheadas.
+- El registro público siempre crea cuentas con rol `USUARIO`.
+- Los roles `EMPLEADO` y `ADMINISTRADOR` solo los crea un ADMINISTRADOR
+  (`POST /api/admin/users`) o el comando `npm run bootstrap:admin`.
+- El login exige `ESTADO = 'ACTIVO'` y comprueba la contraseña antes de revelar el estado.
+- El usuario de conexión (`DB_USER`) debe ser `STOCKPLAN`, o tener `SELECT, INSERT`
+  sobre `ROL` y `USUARIO` más sinónimos, porque las consultas no llevan prefijo de esquema.
