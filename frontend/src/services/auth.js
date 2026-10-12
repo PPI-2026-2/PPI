@@ -35,7 +35,7 @@ async function adminRequest(path, options = {}) {
     const accessToken = getAccessToken();
     if (!accessToken) throw new Error("La sesión no está activa. Vuelve a iniciar sesión.");
 
-    const response = await fetch(`${API_BASE_URL}/admin/users${path}`, {
+    const response = await fetch(`${API_BASE_URL}/admin/staff${path}`, {
         ...options,
         headers: {
             "Content-Type": "application/json",
@@ -46,15 +46,15 @@ async function adminRequest(path, options = {}) {
     return parseResponse(response);
 }
 
-export async function getAdminUsers() {
+export async function getStaffAccounts() {
     const data = await adminRequest("");
     return data.users;
 }
 
-export async function createManagedUser(user) {
+export async function createStaffAccount(account) {
     const data = await adminRequest("", {
         method: "POST",
-        body: JSON.stringify(user)
+        body: JSON.stringify(account)
     });
     return data.user;
 }

@@ -1,11 +1,10 @@
 import "dotenv/config";
 import cors from "cors";
 import express from "express";
-import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 
 import authRouter from "./routes/auth.routes.js";
-import usersRouter from "./routes/users.routes.js";
+import staffRouter from "./routes/staff.routes.js";
 
 const app = express();
 const allowedOrigins = (process.env.FRONTEND_ORIGIN || "http://localhost:5173")
@@ -27,7 +26,7 @@ app.use(express.json({ limit: "10kb" }));
 
 app.get("/api/health", (_req, res) => res.status(200).json({ status: "ok" }));
 app.use("/api/auth", authRouter);
-app.use("/api/admin/users", usersRouter);
+app.use("/api/admin/staff", staffRouter);
 
 app.use((_req, res) => res.status(404).json({ message: "Ruta no encontrada." }));
 
