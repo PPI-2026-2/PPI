@@ -1,5 +1,6 @@
 import {
     BrowserRouter,
+    Navigate,
     Routes,
     Route
 } from "react-router-dom";
@@ -8,10 +9,15 @@ import Home from "../pages/Home/Home";
 import Login from "../pages/Login/Login";
 import Register from "../pages/Register/Register";
 import AdminUsers from "../pages/AdminUsers/AdminUsers";
+import AdminCatalog from "../pages/AdminCatalog/AdminCatalog";
+import AdminProducts from "../pages/AdminProducts/AdminProducts";
+import AdminProductDetail from "../pages/AdminProducts/AdminProductDetail";
 import ProductDetails from "../pages/ProductDetails/ProductDetails";
 import Cart from "../pages/Cart/Cart";
 import ProtectedRoute from "./ProtectedRoute";
 
+import AdminLayout
+    from "../layouts/AdminLayout/AdminLayout";
 import EmployeeLayout
     from "../layouts/EmployeeLayout/EmployeeLayout";
 
@@ -87,11 +93,39 @@ function AppRoutes() {
                     </Route>
                 </Route>
 
+
+                {/* Panel del administrador */}
+
                 <Route element={<ProtectedRoute allowedRoles={["ADMINISTRADOR"]} />}>
                     <Route
-                        path="/administrador/usuarios"
-                        element={<AdminUsers />}
-                    />
+                        path="/administrador"
+                        element={<AdminLayout />}
+                    >
+                        <Route
+                            index
+                            element={<Navigate to="productos" replace />}
+                        />
+
+                        <Route
+                            path="productos"
+                            element={<AdminProducts />}
+                        />
+
+                        <Route
+                            path="productos/:productId"
+                            element={<AdminProductDetail />}
+                        />
+
+                        <Route
+                            path="catalogo"
+                            element={<AdminCatalog />}
+                        />
+
+                        <Route
+                            path="usuarios"
+                            element={<AdminUsers />}
+                        />
+                    </Route>
                 </Route>
 
 

@@ -1,22 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
-import { LogOut, RefreshCw, ShieldCheck, UserPlus, Users } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { RefreshCw, UserPlus, Users } from "lucide-react";
 
-import { clearAuthSession, createStaffAccount, getSessionUser, getStaffAccounts } from "../../services/auth";
+import { createStaffAccount, getStaffAccounts } from "../../services/auth";
 
 import "./AdminUsers.css";
 
 const emptyForm = { firstName: "", lastName: "", email: "", password: "", role: "EMPLEADO" };
 
 function AdminUsers() {
-    const navigate = useNavigate();
     const [users, setUsers] = useState([]);
     const [form, setForm] = useState(emptyForm);
     const [error, setError] = useState("");
     const [notice, setNotice] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const currentUser = getSessionUser();
 
     const loadUsers = useCallback(async () => {
         setError("");
@@ -56,18 +53,8 @@ function AdminUsers() {
         }
     };
 
-    const handleLogout = () => {
-        clearAuthSession();
-        navigate("/", { replace: true });
-    };
-
     return (
-        <main className="admin-users-page">
-            <header className="admin-users-navbar">
-                <div className="admin-users-navbar__brand"><span><ShieldCheck size={19} /></span><strong>StockPlan</strong><i />Administración de personal</div>
-                <div className="admin-users-navbar__account"><span>{currentUser?.name || "Administrador"}</span><button type="button" onClick={handleLogout}><LogOut size={16} /> Cerrar sesión</button></div>
-            </header>
-
+        <div className="admin-users-page">
             <div className="admin-users-content">
                 <header className="admin-users-heading">
                     <span>GESTIÓN / CUENTAS</span>
@@ -104,7 +91,7 @@ function AdminUsers() {
                     </div>
                 </section>
             </div>
-        </main>
+        </div>
     );
 }
 
