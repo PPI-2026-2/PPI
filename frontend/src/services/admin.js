@@ -79,3 +79,50 @@ export async function setProductSizeStatus(id, referenceId, status) {
         body: { status }
     })).product;
 }
+
+// Recepciones de mercancía
+export async function getReceptions({ status, productId } = {}) {
+    const params = new URLSearchParams();
+    if (status) params.set("estado", status);
+    if (productId) params.set("productId", productId);
+    const query = params.toString();
+    return (await request(`/recepciones${query ? `?${query}` : ""}`)).receptions;
+}
+export async function createReception(reception) {
+    return (await request("/recepciones", { method: "POST", body: reception })).reception;
+}
+export async function confirmReception(id) {
+    return (await request(`/recepciones/${id}/confirmar`, { method: "POST", body: {} })).reception;
+}
+export async function cancelReception(id, observation) {
+    return (await request(`/recepciones/${id}/anular`, { method: "POST", body: { observation } })).reception;
+}
+
+// Inventario
+export async function getInventory({ q, level, productId } = {}) {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (level) params.set("nivel", level);
+    if (productId) params.set("productId", productId);
+    const query = params.toString();
+    return request(`/inventario${query ? `?${query}` : ""}`); // { items, summary }
+}
+export async function setInventoryMinimum(referenceId, minimum) {
+    return (await request(`/inventario/${referenceId}/minimo`, { method: "PATCH", body: { minimum } })).item;
+}
+export async function adjustInventory(referenceId, quantity, observation) {
+    return (await request(`/inventario/${referenceId}/ajuste`, { method: "POST", body: { quantity, observation } })).item;
+}
+
+// Movimientos
+export async function getMovements({ type, productId, limit } = {}) {
+    const params = new URLSearchParams();
+    if (type) params.set("tipo", type);
+    if (productId) params.set("productId", productId);
+    if (limit) params.set("limit", limit);
+    const query = params.toString();
+    return (await request(`/movimientos${query ? `?${query}` : ""}`)).movements;
+}
+
+export const formatDateTime = (value) =>
+    value ? new Date(value).toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" }) : "—";

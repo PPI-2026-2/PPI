@@ -12,6 +12,9 @@ import AdminUsers from "../pages/AdminUsers/AdminUsers";
 import AdminCatalog from "../pages/AdminCatalog/AdminCatalog";
 import AdminProducts from "../pages/AdminProducts/AdminProducts";
 import AdminProductDetail from "../pages/AdminProducts/AdminProductDetail";
+import AdminReceptions from "../pages/AdminReceptions/AdminReceptions";
+import AdminInventory from "../pages/AdminInventory/AdminInventory";
+import AdminMovements from "../pages/AdminMovements/AdminMovements";
 import ProductDetails from "../pages/ProductDetails/ProductDetails";
 import Cart from "../pages/Cart/Cart";
 import ProtectedRoute from "./ProtectedRoute";
@@ -119,6 +122,21 @@ function AppRoutes() {
                         <Route
                             path="catalogo"
                             element={<AdminCatalog />}
+                        />
+
+                        <Route
+                            path="recepciones"
+                            element={<AdminReceptions />}
+                        />
+
+                        <Route
+                            path="inventario"
+                            element={<AdminInventory />}
+                        />
+
+                        <Route
+                            path="movimientos"
+                            element={<AdminMovements />}
                         />
 
                         <Route

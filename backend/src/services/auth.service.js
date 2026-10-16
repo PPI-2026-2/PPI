@@ -6,6 +6,10 @@ import { getOracleConnection } from "../config/oracle.js";
 
 const ALLOWED_ROLES = new Set(["EMPLEADO", "USUARIO", "ADMINISTRADOR"]);
 
+// Hash de relleno: se compara cuando el correo no existe para que la respuesta
+// tarde lo mismo que con un correo real y no se pueda descubrir qué correos existen.
+const DUMMY_HASH = bcrypt.hashSync("stockplan-relleno-no-es-una-clave", 12);
+
 export class AuthError extends Error {
     constructor(message, statusCode = 401) {
         super(message);
@@ -29,16 +33,16 @@ export async function authenticateUser(email, password) {
         );
         const row = result.rows?.[0];
 
-        if (!row) throw new AuthError("Correo o contraseña incorrectos.");
+        // 1) Contraseña primero (siempre se ejecuta bcrypt, exista o no el correo).
+        const passwordHash = row ? String(row.PASSWORD_HASH ?? "") : DUMMY_HASH;
+        const isValidPassword = await bcrypt.compare(password, passwordHash).catch(() => false);
+        if (!row || !isValidPassword) throw new AuthError("Correo o contraseña incorrectos.");
 
+        // 2) Solo con credenciales correctas se informa del estado y el rol.
         const estado = String(row.ESTADO ?? "").trim().toUpperCase();
         const role = String(row.NOMBRE_ROL ?? "").trim().toUpperCase();
         if (estado !== "ACTIVO") throw new AuthError("La cuenta está inactiva.", 403);
         if (!ALLOWED_ROLES.has(role)) throw new AuthError("El rol de la cuenta no está habilitado.", 403);
-
-        const passwordHash = String(row.PASSWORD_HASH ?? "");
-        const isValidPassword = await bcrypt.compare(password, passwordHash).catch(() => false);
-        if (!isValidPassword) throw new AuthError("Correo o contraseña incorrectos.");
 
         return {
             id: String(row.ID_USUARIO_PK),
