@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 
 import Pagination from "../../components/Pagination/Pagination";
 import {
+    cancelIncompleteOrder,
     cancelUnclaimedOrder,
     formatOrderDateTime,
     formatOrderMoney,
@@ -124,6 +125,7 @@ function AdminOrders() {
     const [pagination, setPagination] = useState(null);
     const [searchParams, setSearchParams] = useSearchParams();
     const [confirmId, setConfirmId] = useState(null);
+    const [closeReason, setCloseReason] = useState("");
     const [isBusy, setIsBusy] = useState(false);
     const [notice, setNotice] = useState("");
     const startUnclaimed = searchParams.get("vista") === "sin-reclamar";
@@ -200,6 +202,28 @@ function AdminOrders() {
         }
     };
 
+    const openConfirm = (order) => {
+        setCloseReason("");
+        setConfirmId(confirmId === order.id ? null : order.id);
+    };
+
+    const handleCloseIncomplete = async (order) => {
+        setError("");
+        setNotice("");
+        setIsBusy(true);
+        try {
+            await cancelIncompleteOrder(order.id, closeReason.trim());
+            setNotice(`Pedido ${order.code} cerrado. Lo que tenía separado volvió al stock y se avisó al cliente.`);
+            setConfirmId(null);
+            setOpenId(null);
+            await load(filters, pagination?.page ?? 1);
+        } catch (requestError) {
+            setError(requestError.message);
+        } finally {
+            setIsBusy(false);
+        }
+    };
+
     const toggleDetail = async (order) => {
         if (openId === order.id) {
             setOpenId(null);
@@ -220,7 +244,7 @@ function AdminOrders() {
             <header className="adm-heading">
                 <span>PEDIDOS / SEGUIMIENTO</span>
                 <h1>Pedidos de clientes</h1>
-                <p>Consulta de todos los pedidos y su recorrido: quién los verificó, el motivo de los incompletos y cuándo se reclamaron. Los pedidos los gestiona el personal de tienda; aquí solo cancelas los que llevan demasiados días sin reclamar. Se muestran 100 pedidos por página.</p>
+                <p>Consulta de todos los pedidos y su recorrido: quién los verificó, el motivo de los incompletos y cuándo se reclamaron. Los pedidos los gestiona el personal de tienda; aquí cancelas los que llevan demasiados días sin reclamar y cierras los incompletos que no se van a completar. Se muestran 100 pedidos por página.</p>
             </header>
 
             <div className="adm-orders-stats">
@@ -287,11 +311,26 @@ function AdminOrders() {
                                             {order.unclaimed && <div><small className="adm-orders-overdue">Sin reclamar · {Math.floor(order.readyDays)} días</small></div>}
                                         </td>
                                         <td className="adm-num adm-orders-actions">
-                                            {order.unclaimed && <button type="button" className="adm-btn adm-btn--sm adm-btn--danger-soft" onClick={() => setConfirmId(confirmId === order.id ? null : order.id)} disabled={isBusy}>Cancelar pedido</button>}
+                                            {order.unclaimed && <button type="button" className="adm-btn adm-btn--sm adm-btn--danger-soft" onClick={() => openConfirm(order)} disabled={isBusy}>Cancelar pedido</button>}
+                                            {order.status === "INCOMPLETO" && <button type="button" className="adm-btn adm-btn--sm adm-btn--danger-soft" onClick={() => openConfirm(order)} disabled={isBusy}>Cerrar pedido</button>}
                                             <button type="button" className="adm-btn adm-btn--sm" onClick={() => toggleDetail(order)}>{openId === order.id ? "Ocultar" : "Ver detalle"}</button>
                                         </td>
                                     </tr>
-                                    {confirmId === order.id && (
+                                    {confirmId === order.id && order.status === "INCOMPLETO" && (
+                                        <tr>
+                                            <td colSpan="7" className="adm-editor-cell">
+                                                <div className="adm-orders-confirm" role="alertdialog" aria-label={`Cerrar pedido ${order.code}`}>
+                                                    <p><strong>¿Cerrar el pedido {order.code}?</strong> Quedará cancelado, lo que tenía separado volverá al stock disponible y el cliente verá el motivo en su campana de notificaciones. Esta acción no se puede deshacer.</p>
+                                                    <textarea className="adm-input" style={{ width: "100%" }} rows="2" maxLength="500" placeholder="Motivo del cierre (obligatorio)" aria-label="Motivo del cierre" value={closeReason} onChange={(event) => setCloseReason(event.target.value)} />
+                                                    <div>
+                                                        <button type="button" className="adm-btn adm-btn--sm adm-btn--danger" onClick={() => handleCloseIncomplete(order)} disabled={isBusy || !closeReason.trim()}>{isBusy ? "Cerrando…" : "Sí, cerrar y liberar stock"}</button>
+                                                        <button type="button" className="adm-btn adm-btn--sm" onClick={() => setConfirmId(null)} disabled={isBusy}>Volver</button>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {confirmId === order.id && order.status !== "INCOMPLETO" && (
                                         <tr>
                                             <td colSpan="7" className="adm-editor-cell">
                                                 <div className="adm-orders-confirm" role="alertdialog" aria-label={`Cancelar pedido ${order.code}`}>

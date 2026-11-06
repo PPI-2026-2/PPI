@@ -323,7 +323,7 @@ async function releaseAndCancel(connection, orderId, userId, observation) {
 
     for (const detail of details) {
         if (detail.CANTIDAD_DISPONIBLE <= 0) continue;
-        await connection.execute(
+        const released = await connection.execute(
             `UPDATE INVENTARIO
                 SET CANTIDAD_RESERVADA = CANTIDAD_RESERVADA - :quantity,
                     FECHA_ACTUALIZACION = SYSDATE
@@ -331,6 +331,9 @@ async function releaseAndCancel(connection, orderId, userId, observation) {
                 AND CANTIDAD_RESERVADA >= :quantityCheck`,
             { quantity: detail.CANTIDAD_DISPONIBLE, quantityCheck: detail.CANTIDAD_DISPONIBLE, referenceId: detail.ID_REFERENCIA_FK }
         );
+        if (released.rowsAffected !== 1) {
+            throw new AppError("El inventario no coincide con lo reservado para este pedido. Revisa el stock antes de cancelar.", 409);
+        }
         await connection.execute(
             "UPDATE DETALLE_PEDIDO SET CANTIDAD_DISPONIBLE = 0 WHERE ID_DETALLE_PEDIDO_PK = :detailId",
             { detailId: detail.ID_DETALLE_PEDIDO_PK }
@@ -375,6 +378,16 @@ export function cancelUnclaimedOrder(orderId, adminId, limitDays) {
             adminId,
             `No fue reclamado en ${limitDays} días; los productos separados volvieron al stock.`
         );
+        return { id: orderId, code: orderCode(orderId), status: "CANCELADO" };
+    });
+}
+
+// Cierre por el ADMINISTRADOR de un pedido INCOMPLETO que no se va a completar: libera lo separado
+// y el motivo queda en el historial y en el aviso al cliente.
+export function cancelIncompleteOrder(orderId, adminId, reason) {
+    return withTransaction(async (connection) => {
+        await lockOrder(connection, orderId, ["INCOMPLETO"], "cerrar");
+        await releaseAndCancel(connection, orderId, adminId, reason);
         return { id: orderId, code: orderCode(orderId), status: "CANCELADO" };
     });
 }

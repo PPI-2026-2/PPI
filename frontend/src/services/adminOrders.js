@@ -72,3 +72,8 @@ export async function getAdminOrder(id) {
 export function cancelUnclaimedOrder(id) {
     return request(`/${encodeURIComponent(id)}/cancelar-sin-reclamar`, { method: "POST", body: {} });
 }
+
+// Solo pedidos INCOMPLETO: los cancela con un motivo y libera lo separado.
+export function cancelIncompleteOrder(id, reason) {
+    return request(`/${encodeURIComponent(id)}/cerrar-incompleto`, { method: "POST", body: { reason } });
+}

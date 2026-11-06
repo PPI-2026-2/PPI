@@ -1,6 +1,7 @@
 import { AppError } from "../utils/app-error.js";
 import { OBJECT, withConnection } from "../utils/db.js";
 import {
+    cancelIncompleteOrder,
     cancelUnclaimedOrder as cancelUnclaimed,
     getOrder,
     getOrdersSummary,
@@ -13,7 +14,7 @@ const MAX_ROWS = 200;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
-export { ORDER_STATUSES };
+export { cancelIncompleteOrder, ORDER_STATUSES };
 
 // Días que un pedido COMPLETO (ya avisado al cliente) puede esperar en tienda antes de considerarse "sin reclamar".
 export function unclaimedDays() {

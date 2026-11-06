@@ -3,9 +3,9 @@
 .adm-orders-stat:hover, .adm-orders-stat.is-active { border-color: var(--adm-primary, #0f6cbd); }
 .adm-orders-stat--warn span { color: #86651b; }
 .adm-orders-overdue { color: #9c3f37; font-weight: 600; }
-.adm-orders-actions { display: flex; justify-content: flex-end; gap: 6px; white-space: nowrap; }
+.adm-orders-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; white-space: nowrap; }
 .adm-orders-unclaimed-note { display: flex; align-items: center; gap: 8px; margin-top: 14px; border: 1px solid #ecdcae; background: #fbf3df; color: #6d5214; font-size: 12px; }
-.adm-orders-confirm { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid #efd2cf; border-radius: 6px; background: rgba(156, 63, 55, .07); font-size: 12px; }
+.adm-orders-confirm { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid #efd2cf; border-radius: 6px; background: rgba(156, 63, 55, .07); font-size: 12px; white-space: normal; }
 .adm-orders-confirm p { flex: 1 1 360px; margin: 0; }
 .adm-orders-confirm > div { display: flex; gap: 8px; }
 .adm-btn--danger { background: #9c3f37; border-color: #9c3f37; color: #fff; }
@@ -30,9 +30,9 @@
 .adm-order-badge--reclamado { background: #e4eef7; color: #2b648b; }
 .adm-order-badge--cancelado { background: #f1ecec; color: #8a5d5a; }
 .adm-order-detail { padding: 6px 4px 12px; }
-.adm-order-detail__reason { margin: 0 0 12px; padding: 9px 12px; border: 1px solid #efd2cf; border-radius: 6px; background: rgba(156, 63, 55, .08); font-size: 12px; }
+.adm-order-detail__reason { margin: 0 0 12px; padding: 9px 12px; border: 1px solid #efd2cf; border-radius: 6px; background: rgba(156, 63, 55, .08); font-size: 12px; white-space: normal; }
 .adm-order-detail__title { margin: 16px 0 8px; font-size: 13px; }
 .adm-order-detail__history { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; font-size: 12px; }
-.adm-order-detail__history li { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: var(--adm-text-2); }
+.adm-order-detail__history li { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: var(--adm-text-2); white-space: normal; }
 @media (max-width: 1000px) { .adm-orders-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .adm-orders-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -1,6 +1,6 @@
 import * as service from "../services/admin-orders.service.js";
 import { asyncHandler } from "../utils/async-handler.js";
-import { requireId, requireInt, requireOneOf } from "../utils/validators.js";
+import { requireId, requireInt, requireOneOf, requireString } from "../utils/validators.js";
 
 export const getOrders = asyncHandler(async (req, res) => {
     const status = req.query.estado ? requireOneOf(String(req.query.estado), "El estado", service.ORDER_STATUSES) : undefined;
@@ -37,4 +37,12 @@ export const getOrder = asyncHandler(async (req, res) => {
 export const cancelUnclaimedOrder = asyncHandler(async (req, res) => {
     const order = await service.cancelUnclaimedOrder(requireId(req.params.id, "El pedido"), requireId(req.auth.sub, "El usuario"));
     res.status(200).json({ order, message: "Pedido cancelado. Los productos separados volvieron al stock disponible." });
+});
+
+// El administrador cierra un pedido INCOMPLETO que no se va a completar; el motivo es obligatorio.
+export const cancelIncompleteOrder = asyncHandler(async (req, res) => {
+    const orderId = requireId(req.params.id, "El pedido");
+    const reason = requireString(req.body?.reason, "El motivo", { max: 500 });
+    const order = await service.cancelIncompleteOrder(orderId, requireId(req.auth.sub, "El usuario"), reason);
+    res.status(200).json({ order, message: "Pedido cerrado. Los productos separados volvieron al stock disponible." });
 });
