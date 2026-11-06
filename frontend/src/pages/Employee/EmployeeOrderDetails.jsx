@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CalendarDays, CheckCircle2, CircleAlert, Clock3, Mail, Minus, PackageCheck, Plus, ShieldCheck, UserRound, XCircle } from "lucide-react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useOutletContext, useParams } from "react-router-dom";
 
 import {
     deliverEmployeeOrder,
@@ -38,6 +38,7 @@ function buildQuantities(order) {
 
 function EmployeeOrderDetails() {
     const { orderId } = useParams();
+    const { setDetailOrderStatus } = useOutletContext();
     const [order, setOrder] = useState(null);
     const [quantities, setQuantities] = useState({});
     const [reason, setReason] = useState("");
@@ -51,12 +52,14 @@ function EmployeeOrderDetails() {
 
     const applyOrder = useCallback((next) => {
         setOrder(next);
+        setDetailOrderStatus(next.status);
         setQuantities(buildQuantities(next));
         setReason(next.incompleteReason ?? "");
-    }, []);
+    }, [setDetailOrderStatus]);
 
     useEffect(() => {
         let isActive = true;
+        setDetailOrderStatus(null);
         setIsLoading(true);
         setNotFound(false);
         setLoadError("");
@@ -72,7 +75,7 @@ function EmployeeOrderDetails() {
             })
             .finally(() => { if (isActive) setIsLoading(false); });
         return () => { isActive = false; };
-    }, [orderId, applyOrder]);
+    }, [orderId, applyOrder, setDetailOrderStatus]);
 
     const derivedStatus = useMemo(() => {
         if (!order) return "PENDIENTE";

@@ -18,6 +18,8 @@ function EmployeeLayout() {
         localStorage.getItem("stockplan-employee-palette") || "azure-soft"
     );
 
+    const [detailOrderStatus, setDetailOrderStatus] = useState(null);
+
 
     useEffect(() => {
 
@@ -96,12 +98,13 @@ function EmployeeLayout() {
 
                 <EmployeeSidebar
                     isCollapsed={isSidebarCollapsed}
+                    detailOrderStatus={detailOrderStatus}
                 />
 
 
                 <main className="employee-layout__content">
 
-                    <Outlet />
+                    <Outlet context={{ setDetailOrderStatus }} />
 
                 </main>
 

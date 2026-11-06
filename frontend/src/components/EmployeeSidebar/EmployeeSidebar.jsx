@@ -6,19 +6,18 @@ import {
     CheckCircle2,
     CircleAlert
 } from "lucide-react";
-import { getEmployeeOrder } from "../../data/employeeOrders";
 
 import "./EmployeeSidebar.css";
 
-function EmployeeSidebar({ isCollapsed }) {
+const COMPLETED_STATUSES = ["COMPLETO", "RECLAMADO", "CANCELADO"];
+
+function EmployeeSidebar({ isCollapsed, detailOrderStatus = null }) {
     const location = useLocation();
     const [searchParams] = useSearchParams();
     const selectedStatus = searchParams.get("estado");
     const isCompletedPage = location.pathname === "/empleado/pedidos/completos";
     const isOrderDetail = location.pathname.startsWith("/empleado/pedidos/") && !isCompletedPage;
-    const detailOrder = isOrderDetail
-        ? getEmployeeOrder(location.pathname.split("/").pop())
-        : null;
+    const detailStatus = isOrderDetail ? detailOrderStatus : null;
     const getLinkClass = (isActive) => `employee-sidebar__link ${isActive ? "employee-sidebar__link--active" : ""}`;
 
     return (
@@ -61,7 +60,7 @@ function EmployeeSidebar({ isCollapsed }) {
 
                             <Link
                                 to="/empleado?estado=Pendiente"
-                                className={getLinkClass(selectedStatus === "Pendiente" || detailOrder?.status === "Pendiente")}
+                                className={getLinkClass(selectedStatus === "Pendiente" || detailStatus === "PENDIENTE")}
                             >
                                 <Clock3 size={18} />
 
@@ -73,7 +72,7 @@ function EmployeeSidebar({ isCollapsed }) {
 
                             <Link
                                 to="/empleado/pedidos/completos"
-                                className={getLinkClass(isCompletedPage || detailOrder?.status === "Completo")}
+                                className={getLinkClass(isCompletedPage || COMPLETED_STATUSES.includes(detailStatus))}
                             >
                                 <CheckCircle2 size={18} />
 
@@ -85,7 +84,7 @@ function EmployeeSidebar({ isCollapsed }) {
 
                             <Link
                                 to="/empleado?estado=Incompleto"
-                                className={getLinkClass(selectedStatus === "Incompleto" || detailOrder?.status === "Incompleto")}
+                                className={getLinkClass(selectedStatus === "Incompleto" || detailStatus === "INCOMPLETO")}
                             >
                                 <CircleAlert size={18} />
 
