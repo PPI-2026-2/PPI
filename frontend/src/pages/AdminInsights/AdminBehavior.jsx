@@ -8,7 +8,7 @@ import { Card, HorizonSelect, PeriodSelect, RefreshButton, Tile } from "./shared
 import "./AdminInsights.css";
 
 function AdminBehavior() {
-    const [days, setDays] = useState(30);
+    const [days, setDays] = useState(90);
     const [horizon, setHorizon] = useState(90);
     const [data, setData] = useState(null);
     const [error, setError] = useState("");
@@ -90,7 +90,7 @@ function AdminBehavior() {
                                         <td className="adm-num">{entry.available}</td>
                                         <td className="adm-num">{entry.inTransit}</td>
                                         <td className="adm-num">{String(entry.dailyUse).replace(".", ",")}</td>
-                                        <td>{formatDay(entry.date)}<div><small>en {entry.inDays} días</small></div></td>
+                                        <td>{formatDay(entry.date)}<div><small>en {entry.inDays} días · talla {entry.firstSize}</small></div></td>
                                         <td>{entry.withinHorizon
                                             ? <span className="ins-badge ins-badge--alta"><AlertTriangle size={13} />Se agota antes de {horizon} d</span>
                                             : <span className="ins-badge ins-badge--normal"><CheckCircle2 size={13} />Cubierto</span>}</td>

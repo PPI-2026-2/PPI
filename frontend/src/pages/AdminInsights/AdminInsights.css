@@ -28,6 +28,7 @@
 .ins-tiles--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .ins-tiles--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .ins-now { color: var(--viz-bad); }
+.ins-suggested-note { min-width: 120px; white-space: normal; }
 .ins-tile { display: flex; align-items: center; gap: 14px; min-width: 0; padding: 16px; border: 1px solid var(--adm-border); border-radius: 6px; background: var(--adm-surface); }
 .ins-tile > div { min-width: 0; }
 .ins-tile__icon { display: grid; flex: none; width: 46px; height: 46px; place-items: center; border-radius: 8px; background: color-mix(in srgb, var(--tile) 14%, transparent); color: var(--tile); }

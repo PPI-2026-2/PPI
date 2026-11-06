@@ -15,7 +15,7 @@ const RECOMMENDATION = {
 };
 
 function AdminSales() {
-    const [days, setDays] = useState(30);
+    const [days, setDays] = useState(90);
     const [horizon, setHorizon] = useState(90);
     const [data, setData] = useState(null);
     const [error, setError] = useState("");
@@ -142,7 +142,7 @@ function AdminSales() {
                                     <td className="adm-num">{product.available}</td>
                                     <td className="adm-num">{product.inTransit}</td>
                                     <td>{product.missing > 0
-                                        ? <span className="ins-badge ins-badge--alta"><AlertTriangle size={13} />Faltan {formatNumber(product.missing)} u.</span>
+                                        ? <span className="ins-badge ins-badge--alta"><AlertTriangle size={13} />Pedir {formatNumber(product.missing)} u.</span>
                                         : <span className="ins-badge ins-badge--normal"><CheckCircle2 size={13} />Cubierto</span>}</td>
                                 </tr>
                             ))}

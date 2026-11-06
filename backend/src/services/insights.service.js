@@ -5,7 +5,7 @@ import { orderCode } from "./orders.service.js";
 // Reglas de negocio de análisis (reposición, comportamiento, ventas y alertas).
 // Todo se calcula aquí con los datos de la base (movimientos, inventario, recepciones y pedidos): no se guarda nada.
 // Parámetros opcionales en backend/.env (los valores entre paréntesis son los que se usan si no se definen):
-//   INSIGHTS_HISTORY_DAYS (30)      días de historial para el consumo diario
+//   INSIGHTS_HISTORY_DAYS (90)      días de historial para el consumo diario
 //   INSIGHTS_SAFETY_DAYS (2)        días extra de seguridad sobre el tiempo de entrega del proveedor
 //   INSIGHTS_COVERAGE_DAYS (15)     días de ventas que se quiere cubrir después de que llegue el pedido
 //   (el horizonte de previsión es 30, 60 o 90 días y se elige en pantalla: ?horizonte=)
@@ -24,7 +24,7 @@ function envNumber(name, fallback) {
 
 export function getSettings() {
     return {
-        historyDays: envNumber("INSIGHTS_HISTORY_DAYS", 30),
+        historyDays: envNumber("INSIGHTS_HISTORY_DAYS", 90),
         safetyDays: envNumber("INSIGHTS_SAFETY_DAYS", 2),
         coverageDays: envNumber("INSIGHTS_COVERAGE_DAYS", 15),
         receptionDays: envNumber("ALERT_RECEPTION_DAYS", 2),
@@ -60,6 +60,7 @@ function buildDays(days, endDate = startOfDay(new Date())) {
 }
 
 const round1 = (value) => Math.round(value * 10) / 10;
+const round2 = (value) => Math.round(value * 100) / 100;
 const pct = (current, previous) => (previous > 0 ? Math.round(((current - previous) / previous) * 1000) / 10 : null);
 
 // ---------- Datos base por referencia (producto + talla) ----------
@@ -103,8 +104,8 @@ async function loadReferences(connection, days) {
 //   sugerido        = si proyectado <= punto de reorden: objetivo - proyectado (nunca negativo)
 // Con `horizon` (previsión a 30/60/90 días) el sugerido pasa a ser lo necesario para cubrir ese horizonte:
 //   demanda del horizonte = consumo diario x horizonte
-//   sugerido              = demanda del horizonte + stock mínimo - proyectado (nunca negativo)
-//   se agota              = hoy + disponible / consumo diario
+//   sugerido              = consumo diario x el mayor entre horizonte y días de entrega + stock mínimo - proyectado (nunca negativo)
+//   se agota             = hoy + disponible / consumo diario
 //   pedir antes de        = fecha de agotamiento - días de entrega del proveedor (si ya pasó: pedir ya)
 function analyze(row, days, settings, horizon = null) {
     const daily = row.SALIDAS / days;
@@ -114,7 +115,8 @@ function analyze(row, days, settings, horizon = null) {
     const target = reorderPoint + Math.ceil(daily * settings.coverageDays);
     const horizonDemand = horizon ? Math.ceil(daily * horizon) : null;
     const suggested = horizon
-        ? Math.max(0, horizonDemand + row.MINIMO - projected)
+        // Debe alcanzar al menos hasta que llegue un pedido hecho hoy.
+        ? Math.max(0, Math.ceil(daily * Math.max(horizon, row.DIAS_ENTREGA)) + row.MINIMO - projected)
         : projected <= reorderPoint ? Math.max(0, target - projected) : 0;
     const stockoutIn = daily > 0 ? Math.floor(Math.max(0, available) / daily) : null;
     const orderIn = stockoutIn === null ? null : stockoutIn - row.DIAS_ENTREGA;
@@ -141,7 +143,7 @@ function analyze(row, days, settings, horizon = null) {
         inTransit: row.EN_CAMINO,
         sold: row.SALIDAS,
         received: row.ENTRADAS,
-        dailyUse: round1(daily),
+        dailyUse: round2(daily),
         coverageDays,
         reorderPoint,
         targetStock: target,
@@ -269,8 +271,12 @@ export function getBehavior({ days, horizon = DEFAULT_HORIZON } = {}) {
             stockouts: selling
                 .map((entry) => {
                     const daily = entry.sold / period;
-                    const inDays = Math.floor(entry.available / daily);
-                    return { name: entry.name, available: entry.available, inTransit: entry.inTransit, dailyUse: round1(daily), inDays, date: dayKey(addDays(today, inDays)), withinHorizon: inDays <= horizon };
+                    // La primera talla que se agota decide: las demás tallas no la sustituyen.
+                    const first = references
+                        .filter((ref) => ref.productId === entry.productId && ref.stockoutInDays !== null)
+                        .reduce((earliest, ref) => (ref.stockoutInDays < earliest.stockoutInDays ? ref : earliest));
+                    const inDays = first.stockoutInDays;
+                    return { name: entry.name, available: entry.available, inTransit: entry.inTransit, dailyUse: round2(daily), inDays, firstSize: first.sizeName, date: dayKey(addDays(today, inDays)), withinHorizon: inDays <= horizon };
                 })
                 .sort((a, b) => a.inDays - b.inDays)
         };
@@ -421,19 +427,18 @@ export function getSales({ days, horizon = DEFAULT_HORIZON } = {}) {
         }
         const byProduct = new Map();
         for (const ref of references) {
-            const entry = byProduct.get(ref.productName) ?? { name: ref.productName, sold: 0, available: 0, inTransit: 0, pendingDemand: 0 };
+            const entry = byProduct.get(ref.productName) ?? { name: ref.productName, sold: 0, available: 0, inTransit: 0, suggested: 0 };
             entry.sold += ref.sold;
             entry.available += Math.max(0, ref.available);
             entry.inTransit += ref.inTransit;
-            entry.pendingDemand += ref.pendingDemand;
+            entry.suggested += ref.suggested;
             byProduct.set(ref.productName, entry);
         }
         const productForecast = [...byProduct.values()]
             .filter((entry) => entry.sold > 0)
             .map((entry) => {
                 const projectedUnits = Math.ceil((entry.sold / period) * horizon);
-                const covered = entry.available + entry.inTransit - entry.pendingDemand;
-                return { name: entry.name, dailyUnits: round1(entry.sold / period), projectedUnits, available: entry.available, inTransit: entry.inTransit, missing: Math.max(0, projectedUnits - covered) };
+                return { name: entry.name, dailyUnits: round2(entry.sold / period), projectedUnits, available: entry.available, inTransit: entry.inTransit, missing: entry.suggested };
             })
             .sort((a, b) => b.projectedUnits - a.projectedUnits)
             .slice(0, 10);
@@ -446,7 +451,7 @@ export function getSales({ days, horizon = DEFAULT_HORIZON } = {}) {
             recommendations.push({
                 type: "REPONER",
                 title: `Pedir ${ref.suggested} u. de ${ref.productName} talla ${ref.sizeName}`,
-                detail: `A ${ref.dailyUse} u./día se venderán ~${ref.horizonDemand} u. en ${horizon} días y tienes ${ref.available} disponibles${ref.inTransit ? ` (+${ref.inTransit} en camino)` : ""}. Se agota hacia el ${formatDay(ref.stockoutDate)}; el proveedor tarda ${ref.leadDays} días, ${when}.`,
+                detail: `A ${String(ref.dailyUse).replace(".", ",")} u./día se venderán ~${ref.horizonDemand} u. en ${horizon} días y tienes ${ref.available} disponibles${ref.inTransit ? ` (+${ref.inTransit} en camino)` : ""}. Se agota hacia el ${formatDay(ref.stockoutDate)}; el proveedor tarda ${ref.leadDays} días, ${when}.`,
                 path: "/administrador/reposicion"
             });
         }
@@ -474,7 +479,7 @@ export function getSales({ days, horizon = DEFAULT_HORIZON } = {}) {
             params: { days: period, horizon },
             forecast: {
                 horizon,
-                dailyUnits: round1(dailyUnits),
+                dailyUnits: round2(dailyUnits),
                 units: Math.ceil(dailyUnits * horizon),
                 revenue: Math.round(dailyRevenue * horizon),
                 weekly,
