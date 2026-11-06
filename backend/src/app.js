@@ -3,8 +3,13 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 
+import adminOrdersRouter from "./routes/admin-orders.routes.js";
 import adminRouter from "./routes/admin.routes.js";
 import authRouter from "./routes/auth.routes.js";
+import employeeRouter from "./routes/employee.routes.js";
+import insightsRouter from "./routes/insights.routes.js";
+import ordersRouter from "./routes/orders.routes.js";
+import storeRouter from "./routes/store.routes.js";
 import { AppError } from "./utils/app-error.js";
 
 const app = express();
@@ -27,6 +32,11 @@ app.use(express.json({ limit: "10kb" }));
 
 app.get("/api/health", (_req, res) => res.status(200).json({ status: "ok" }));
 app.use("/api/auth", authRouter);
+app.use("/api/store", storeRouter);
+app.use("/api/pedidos", ordersRouter);
+app.use("/api/empleado", employeeRouter);
+app.use("/api/admin/pedidos", adminOrdersRouter);
+app.use("/api/admin/analisis", insightsRouter);
 app.use("/api/admin", adminRouter);
 
 app.use((_req, res) => res.status(404).json({ message: "Ruta no encontrada." }));

@@ -48,7 +48,7 @@ function LoginForm() {
             }
 
             if (session.user.role === "ADMINISTRADOR") {
-                navigate("/administrador/usuarios", { replace: true });
+                navigate("/administrador", { replace: true });
                 return;
             }
 

@@ -1,0 +1,46 @@
+/* Tallas: cuadrícula de celdas. Las no disponibles van en gris y tachadas con una línea diagonal. */
+.product-detail__size-grid {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    border-top: 1px solid #d3d7d3;
+    border-left: 1px solid #d3d7d3;
+}
+.product-detail__size-cell {
+    position: relative;
+    min-height: 52px;
+    border: 0;
+    border-right: 1px solid #d3d7d3;
+    border-bottom: 1px solid #d3d7d3;
+    background: #fff;
+    color: #303638;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background .16s, color .16s;
+}
+.product-detail__size-cell:hover:not(:disabled) { background: #edf1ed; }
+/* Talla elegida: se mantiene en blanco y se resalta con un borde oscuro y texto en negrita. */
+.product-detail__size-cell.is-selected,
+.product-detail__size-cell.is-selected:hover { z-index: 1; background: #fff; box-shadow: inset 0 0 0 2px #263b37; color: #17191b; font-weight: 700; }
+.product-detail__size-cell:focus-visible { outline: 2px solid #425b50; outline-offset: -2px; }
+.product-detail__size-cell.is-soldout {
+    background: linear-gradient(to top right, transparent calc(50% - .6px), #9ba19d calc(50% - .6px), #9ba19d calc(50% + .6px), transparent calc(50% + .6px)), #f5f6f4;
+    color: #a9afac;
+    cursor: not-allowed;
+}
+.product-detail__image-wrap .product-image-fallback {
+    display: grid;
+    min-height: 320px;
+    place-items: center;
+    background: #f3f4f2;
+    color: #8a96a0;
+    font-size: 14px;
+    letter-spacing: .04em;
+}
+
+/* Aviso cuando quien intenta añadir al carrito no ha iniciado sesión (o no es un usuario cliente). */
+.product-detail__auth-notice { margin: 12px 0 0; padding: 12px 14px; border: 1px solid #e6d9b8; background: #fbf7ea; color: #6b5a24; font-size: 12px; line-height: 1.55; }
+.product-detail__auth-notice p { margin: 0; }
+.product-detail__auth-links { display: flex; gap: 16px; margin-top: 9px; }
+.product-detail__auth-links a { color: #263b37; font-weight: 650; text-decoration: underline; }

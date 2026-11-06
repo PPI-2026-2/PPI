@@ -1,0 +1,11 @@
+/* Cuando un producto aún no tiene foto en /images/products se muestra este aviso en vez de una imagen rota. */
+.product-card__image-container .product-image-fallback {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    min-height: 160px;
+    place-items: center;
+    color: #8a96a0;
+    font-size: 13px;
+    letter-spacing: .04em;
+}

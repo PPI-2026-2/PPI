@@ -1,10 +1,30 @@
+import { useEffect, useState } from "react";
+
 import Navbar from "../../components/Navbar/Navbar";
 import ProductCarousel from "../../components/ProductCarousel/ProductCarousel";
-import products from "../../data/products";
+import { getStoreProducts } from "../../services/store";
 
 import "./Home.css";
+import "./HomeLive.css";
 
 function Home() {
+    const [products, setProducts] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState("");
+
+    useEffect(() => {
+        let isActive = true;
+        getStoreProducts()
+            .then((list) => {
+                if (!isActive) return;
+                // La tarjeta usa "image"; la API entrega "imageUrl".
+                setProducts(list.map((product) => ({ ...product, image: product.imageUrl })));
+            })
+            .catch((error) => { if (isActive) setErrorMessage(error.message); })
+            .finally(() => { if (isActive) setIsLoading(false); });
+        return () => { isActive = false; };
+    }, []);
+
     return (
         <div className="home">
 
@@ -59,9 +79,16 @@ function Home() {
 
                     </div>
 
-                    <ProductCarousel
-                        products={products}
-                    />
+                    {isLoading && <p className="home__status">Cargando productos...</p>}
+                    {!isLoading && errorMessage && <p className="home__status home__status--error">{errorMessage}</p>}
+                    {!isLoading && !errorMessage && products.length === 0 && (
+                        <p className="home__status">Por ahora no hay productos disponibles. Vuelve pronto.</p>
+                    )}
+                    {!isLoading && !errorMessage && products.length > 0 && (
+                        <ProductCarousel
+                            products={products}
+                        />
+                    )}
 
                 </section>
 

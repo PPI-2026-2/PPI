@@ -34,7 +34,7 @@ export async function createUser({ firstName, lastName, email, password, role = 
             { email: normalizedEmail }
         );
         if (existing.rows?.length) {
-            throw new UserServiceError("Ya existe una cuenta con ese correo electrónico.", 409);
+            throw new UserServiceError("Esta cuenta de correo ya está en uso.", 409);
         }
 
         const roleResult = await connection.execute(
@@ -72,7 +72,7 @@ export async function createUser({ firstName, lastName, email, password, role = 
     } catch (error) {
         if (error instanceof UserServiceError) throw error;
         if (error.errorNum === 1) {
-            throw new UserServiceError("Ya existe una cuenta con ese correo electrónico.", 409);
+            throw new UserServiceError("Esta cuenta de correo ya está en uso.", 409);
         }
         if (error.errorNum === 942 || error.errorNum === 904) {
             throw new UserServiceError("El esquema no coincide con ROL/USUARIO o faltan permisos en estas tablas.", 503);

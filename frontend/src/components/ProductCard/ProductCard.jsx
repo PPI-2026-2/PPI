@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
 
+import ProductImage from "../ProductImage/ProductImage";
+
 import "./ProductCard.css";
+import "./ProductCardLive.css";
 
 function ProductCard({ product }) {
     const formatPrice = (price) => {
@@ -19,7 +22,7 @@ function ProductCard({ product }) {
         >
 
             <div className="product-card__image-container">
-                <img
+                <ProductImage
                     src={product.image}
                     alt={product.name}
                     className="product-card__image"
@@ -30,7 +33,7 @@ function ProductCard({ product }) {
 
                 <div>
                     <h3>{product.name}</h3>
-                    <p>{product.category}</p>
+                    <p>Calzado</p>
                 </div>
 
                 <span className="product-card__price">

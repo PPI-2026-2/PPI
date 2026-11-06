@@ -291,3 +291,18 @@ textarea.adm-input { min-height: 78px; padding: 9px 10px; resize: vertical; }
 .adm-image-box { display: flex; align-items: center; gap: 18px; padding: 20px 22px; }
 .adm-image-box p { margin: 0 0 6px; color: var(--adm-text-2); font-size: 13px; }
 .adm-image-box code { padding: 2px 6px; border-radius: 4px; background: var(--adm-surface-alt); font-size: 12px; }
+
+/* ---------- Fase 2: recepciones, inventario y movimientos ---------- */
+.adm-badge--warn { background: #fbf3df; color: #86651b; }
+.adm-row-actions { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.adm-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.adm-stat { padding: 14px 16px; border: 1px solid var(--adm-border); border-radius: 6px; background: var(--adm-surface); }
+.adm-stat span { display: block; color: var(--adm-text-2); font-size: 11px; }
+.adm-stat strong { display: block; margin-top: 4px; font-size: 22px; }
+.adm-editor-cell { background: var(--adm-surface-alt); }
+.adm-inline-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; }
+.adm-inline-form .adm-field { margin: 0; }
+.adm-field--grow { flex: 1 1 260px; }
+.adm-qty--in { color: var(--adm-success); font-weight: 700; }
+.adm-qty--out { color: var(--adm-danger); font-weight: 700; }
+@media (max-width: 900px) { .adm-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

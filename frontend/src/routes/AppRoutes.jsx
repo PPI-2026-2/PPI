@@ -1,6 +1,5 @@
 import {
     BrowserRouter,
-    Navigate,
     Routes,
     Route
 } from "react-router-dom";
@@ -12,8 +11,18 @@ import AdminUsers from "../pages/AdminUsers/AdminUsers";
 import AdminCatalog from "../pages/AdminCatalog/AdminCatalog";
 import AdminProducts from "../pages/AdminProducts/AdminProducts";
 import AdminProductDetail from "../pages/AdminProducts/AdminProductDetail";
+import AdminHome from "../pages/AdminHome/AdminHome";
+import AdminReceptions from "../pages/AdminReceptions/AdminReceptions";
+import AdminInventory from "../pages/AdminInventory/AdminInventory";
+import AdminMovements from "../pages/AdminMovements/AdminMovements";
+import AdminOrders from "../pages/AdminOrders/AdminOrders";
+import AdminAlerts from "../pages/AdminInsights/AdminAlerts";
+import AdminBehavior from "../pages/AdminInsights/AdminBehavior";
+import AdminReplenishment from "../pages/AdminInsights/AdminReplenishment";
+import AdminSales from "../pages/AdminInsights/AdminSales";
 import ProductDetails from "../pages/ProductDetails/ProductDetails";
 import Cart from "../pages/Cart/Cart";
+import MyOrders from "../pages/MyOrders/MyOrders";
 import ProtectedRoute from "./ProtectedRoute";
 
 import AdminLayout
@@ -69,6 +78,16 @@ function AppRoutes() {
                 />
 
 
+                {/* Historial de pedidos del usuario (cliente) */}
+
+                <Route element={<ProtectedRoute allowedRoles={["USUARIO"]} />}>
+                    <Route
+                        path="/mis-pedidos"
+                        element={<MyOrders />}
+                    />
+                </Route>
+
+
                 {/* Panel del empleado */}
 
                 <Route element={<ProtectedRoute allowedRoles={["EMPLEADO"]} />}>
@@ -103,7 +122,7 @@ function AppRoutes() {
                     >
                         <Route
                             index
-                            element={<Navigate to="productos" replace />}
+                            element={<AdminHome />}
                         />
 
                         <Route
@@ -119,6 +138,46 @@ function AppRoutes() {
                         <Route
                             path="catalogo"
                             element={<AdminCatalog />}
+                        />
+
+                        <Route
+                            path="recepciones"
+                            element={<AdminReceptions />}
+                        />
+
+                        <Route
+                            path="inventario"
+                            element={<AdminInventory />}
+                        />
+
+                        <Route
+                            path="movimientos"
+                            element={<AdminMovements />}
+                        />
+
+                        <Route
+                            path="pedidos"
+                            element={<AdminOrders />}
+                        />
+
+                        <Route
+                            path="reposicion"
+                            element={<AdminReplenishment />}
+                        />
+
+                        <Route
+                            path="comportamiento"
+                            element={<AdminBehavior />}
+                        />
+
+                        <Route
+                            path="ventas"
+                            element={<AdminSales />}
+                        />
+
+                        <Route
+                            path="alertas"
+                            element={<AdminAlerts />}
                         />
 
                         <Route

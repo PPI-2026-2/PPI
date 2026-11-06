@@ -1,0 +1,103 @@
+/* =====================================================================
+   Panel de colores y modo oscuro del administrador.
+   Se carga al final (después de admin.css y admin-home.css).
+   ===================================================================== */
+
+.admin-layout {
+    --adm-navbar: var(--adm-surface);
+    --adm-sidebar: var(--adm-surface);
+    --adm-hover: #edf3f6;
+    --adm-active: var(--adm-primary-soft);
+    --adm-input-border: #cfd9df;
+    --adm-input-bg: #ffffff;
+    --adm-th: #6c7a80;
+    --adm-td: #46545a;
+    --adm-td-line: #edf0f2;
+    --adm-empty: #849096;
+}
+.admin-layout__navbar { background: var(--adm-navbar); }
+.admin-sidebar { background: var(--adm-sidebar); }
+.admin-sidebar__link:hover { background: var(--adm-hover); }
+.admin-sidebar__link--active { background: var(--adm-active); color: var(--adm-primary); }
+.adm-input, .adm-select, .adm-chip { border-color: var(--adm-input-border); background: var(--adm-input-bg); }
+.adm-table th { color: var(--adm-th); }
+.adm-table td { border-top-color: var(--adm-td-line); color: var(--adm-td); }
+.adm-empty { color: var(--adm-empty) !important; }
+
+/* ---------- Botones del navbar ---------- */
+.adm-theme { display: flex; align-items: center; gap: 8px; }
+
+/* ---------- Menú de paletas (mismo formato que el panel del empleado) ---------- */
+.adm-popover--palette { width: 310px; }
+.adm-palette { display: flex; width: 100%; align-items: center; gap: 11px; padding: 10px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--adm-text); font: inherit; text-align: left; cursor: pointer; }
+.adm-palette:hover, .adm-palette.is-selected { border-color: var(--adm-border); background: var(--adm-surface-alt); }
+.adm-palette__dot { width: 22px; height: 22px; flex: 0 0 22px; border: 4px solid color-mix(in srgb, var(--swatch), var(--adm-surface) 80%); border-radius: 50%; background: var(--swatch); }
+.adm-palette__copy { display: grid; gap: 3px; min-width: 0; }
+.adm-palette__copy strong { font-size: 12px; font-weight: 650; }
+.adm-palette__copy small { color: var(--adm-muted); font-size: 10px; }
+.adm-palette__check { margin-left: auto; color: var(--adm-primary); }
+
+/* ---------- Paletas ---------- */
+.admin-layout[data-palette="azure-portal"] {
+    --adm-primary: #0f6cbd; --adm-primary-hover: #115ea3; --adm-primary-soft: #e5eff9;
+    --adm-bg: #eaf0f5; --adm-navbar: #f9fbfc; --adm-sidebar: #e8eff5; --adm-surface-alt: #f0f5f9;
+    --adm-hover: #e0ebf4; --adm-active: #d4e6f5; --adm-border: #d5dfe7; --adm-border-soft: #dfe7ee;
+}
+.admin-layout[data-palette="azure-soft"] {
+    --adm-primary: #176b9a; --adm-primary-hover: #115879; --adm-primary-soft: #e6f0f5;
+    --adm-bg: #f2f5f7; --adm-navbar: #fbfcfd; --adm-sidebar: #f8fafb; --adm-surface-alt: #f7f9fb;
+    --adm-hover: #edf3f6; --adm-active: #e3eef4; --adm-border: #e1e5e8; --adm-border-soft: #e7eaed;
+}
+.admin-layout[data-palette="azure-cloud"] {
+    --adm-primary: #386f93; --adm-primary-hover: #2e5e7e; --adm-primary-soft: #e3edf3;
+    --adm-bg: #edf2f6; --adm-navbar: #f7f9fb; --adm-sidebar: #eaf0f5; --adm-surface-alt: #f1f5f8;
+    --adm-hover: #e1eaf1; --adm-active: #d8e5ef; --adm-border: #d8e1e8; --adm-border-soft: #e1e8ed;
+}
+.admin-layout[data-palette="azure-night"] {
+    --adm-primary: #477b89; --adm-primary-hover: #396977; --adm-primary-soft: #e4edef;
+    --adm-bg: #f0eee8; --adm-navbar: #faf9f5; --adm-sidebar: #e9ece8; --adm-surface: #fbfaf6;
+    --adm-surface-alt: #f2f2ec; --adm-text: #292f30; --adm-text-2: #50595a; --adm-muted: #737b79;
+    --adm-hover: #e3e9e6; --adm-active: #dce8e6; --adm-border: #d9ded9; --adm-border-soft: #e2e6e1;
+}
+
+/* ---------- Modo oscuro (se combina con cualquier paleta) ---------- */
+.admin-layout.admin-layout--dark {
+    --adm-bg: #11181d;
+    --adm-surface: #182229;
+    --adm-surface-alt: #1e2a32;
+    --adm-navbar: #162027;
+    --adm-sidebar: #141d23;
+    --adm-hover: #22313a;
+    --adm-active: #1f3a4d;
+    --adm-border: #2c3b44;
+    --adm-border-soft: #25333b;
+    --adm-text: #e4ebef;
+    --adm-text-2: #b3c0c7;
+    --adm-muted: #8a99a1;
+    --adm-primary: #4ba3e3;
+    --adm-primary-hover: #6bb4ea;
+    --adm-primary-soft: #1d3547;
+    --adm-danger: #f19a92;
+    --adm-danger-bg: #3a2220;
+    --adm-danger-border: #5a3330;
+    --adm-success: #8fd0a2;
+    --adm-success-bg: #1c3024;
+    --adm-success-border: #2d4d39;
+    --adm-input-border: #34454f;
+    --adm-input-bg: #11181d;
+    --adm-th: #8a99a1;
+    --adm-td: #c3cfd5;
+    --adm-td-line: #25333b;
+    --adm-empty: #8a99a1;
+    color-scheme: dark;
+}
+.admin-layout--dark .adm-btn--primary { color: #0b1319; }
+.admin-layout--dark .adm-btn--primary:hover { color: #0b1319; }
+.admin-layout--dark .adm-input:focus { outline-color: #1d3547; }
+.admin-layout--dark .adm-badge--active { background: #1c3024; color: #8fd0a2; }
+.admin-layout--dark .adm-badge--inactive { background: #3a2220; color: #f19a92; }
+.admin-layout--dark .adm-badge--warn { background: #3a3016; color: #e8c872; }
+.admin-layout--dark .adm-notice__icon { background: #3a2a1a; color: #f0a064; }
+.admin-layout--dark .adm-search__input:focus { box-shadow: 0 0 0 3px rgba(75, 163, 227, .2); }
+.admin-layout--dark .adm-popover,
+.admin-layout--dark .adm-search__panel { box-shadow: 0 10px 28px rgba(0, 0, 0, .45); }
