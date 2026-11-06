@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Plus, RefreshCw, X } from "lucide-react";
 
+import Pagination from "../../components/Pagination/Pagination";
 import ProductImage from "../../components/ProductImage/ProductImage";
 import {
     cancelReception,
@@ -11,6 +12,7 @@ import {
     getReceptions
 } from "../../services/admin";
 
+const PAGE_SIZE = 100;
 const emptyForm = { productId: "", referenceId: "", expected: "", received: "", rejected: "0", rejectionReason: "", observation: "" };
 
 const statusBadge = {
@@ -21,6 +23,7 @@ const statusBadge = {
 
 function AdminReceptions() {
     const [receptions, setReceptions] = useState([]);
+    const [pagination, setPagination] = useState(null);
     const [references, setReferences] = useState([]);
     const [statusFilter, setStatusFilter] = useState("");
     const [form, setForm] = useState(emptyForm);
@@ -30,11 +33,13 @@ function AdminReceptions() {
     const [isLoading, setIsLoading] = useState(true);
     const [isBusy, setIsBusy] = useState(false);
 
-    const loadReceptions = useCallback(async (status) => {
+    const loadReceptions = useCallback(async (status, page = 1) => {
         setError("");
         setIsLoading(true);
         try {
-            setReceptions(await getReceptions({ status }));
+            const data = await getReceptions({ status, page, pageSize: PAGE_SIZE });
+            setReceptions(data.receptions);
+            setPagination(data.pagination);
         } catch (requestError) {
             setError(requestError.message);
         } finally {
@@ -43,7 +48,7 @@ function AdminReceptions() {
     }, []);
 
     useEffect(() => {
-        loadReceptions("");
+        loadReceptions("", 1);
         getInventory()
             .then(({ items }) => setReferences(items.filter((item) => item.productStatus === "ACTIVO" && item.referenceStatus === "ACTIVO")))
             .catch((requestError) => setError(requestError.message));
@@ -66,7 +71,12 @@ function AdminReceptions() {
 
     const handleFilter = (status) => {
         setStatusFilter(status);
-        loadReceptions(status);
+        loadReceptions(status, 1);
+    };
+
+    const goToPage = (page) => {
+        loadReceptions(statusFilter, page);
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     const handleSubmit = async (event) => {
@@ -86,7 +96,7 @@ function AdminReceptions() {
             setNotice(`Recepción #${reception.id} registrada. El stock no cambia hasta que la confirmes.`);
             setForm(emptyForm);
             setShowForm(false);
-            await loadReceptions(statusFilter);
+            await loadReceptions(statusFilter, 1);
         } catch (requestError) {
             setError(requestError.message);
         } finally {
@@ -102,7 +112,7 @@ function AdminReceptions() {
         try {
             await confirmReception(reception.id);
             setNotice(`Recepción #${reception.id} confirmada: ${reception.accepted} unidad(es) sumadas a ${reception.productName} talla ${reception.sizeName}.`);
-            await loadReceptions(statusFilter);
+            await loadReceptions(statusFilter, pagination?.page ?? 1);
         } catch (requestError) {
             setError(requestError.message);
         } finally {
@@ -119,7 +129,7 @@ function AdminReceptions() {
         try {
             await cancelReception(reception.id, reason.trim());
             setNotice(`Recepción #${reception.id} anulada. El inventario no se modificó.`);
-            await loadReceptions(statusFilter);
+            await loadReceptions(statusFilter, pagination?.page ?? 1);
         } catch (requestError) {
             setError(requestError.message);
         } finally {
@@ -147,12 +157,12 @@ function AdminReceptions() {
                             <option value="CONFIRMADA">Confirmadas</option>
                             <option value="ANULADA">Anuladas</option>
                         </select>
-                        <button type="button" className="adm-btn" onClick={() => loadReceptions(statusFilter)} disabled={isLoading} aria-label="Actualizar">
+                        <button type="button" className="adm-btn" onClick={() => loadReceptions(statusFilter, pagination?.page ?? 1)} disabled={isLoading} aria-label="Actualizar">
                             <RefreshCw size={15} />
                         </button>
                     </div>
                     <button type="button" className="adm-btn adm-btn--primary" onClick={() => setShowForm((previous) => !previous)}>
-                        <Plus size={15} /> {showForm ? "Cerrar formulario" : "Nueva recepción"}
+                        {showForm ? <X size={15} /> : <Plus size={15} />} {showForm ? "Cancelar" : "Nueva recepción"}
                     </button>
                 </div>
 
@@ -259,6 +269,7 @@ function AdminReceptions() {
                         </tbody>
                     </table>
                 </div>
+                <Pagination pagination={pagination} onChange={goToPage} disabled={isLoading} label="recepciones" />
             </section>
         </div>
     );

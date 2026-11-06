@@ -9,5 +9,7 @@ export const getMovements = asyncHandler(async (req, res) => {
     const productId = req.query.productId ? requireId(req.query.productId, "El producto") : undefined;
     const referenceId = req.query.referenceId ? requireId(req.query.referenceId, "La referencia") : undefined;
     const limit = req.query.limit ? requireInt(req.query.limit, "El límite", { min: 1, max: 500 }) : 100;
-    res.status(200).json({ movements: await service.listMovements({ type, productId, referenceId, limit }) });
+    const page = req.query.pagina ? requireInt(req.query.pagina, "La página", { min: 1, max: 1000000 }) : undefined;
+    const pageSize = req.query.tamano ? requireInt(req.query.tamano, "El tamaño de página", { min: 1, max: 200 }) : 100;
+    res.status(200).json(await service.listMovements({ type, productId, referenceId, limit, page, pageSize }));
 });

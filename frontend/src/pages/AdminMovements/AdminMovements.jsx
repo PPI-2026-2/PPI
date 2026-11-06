@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 
+import Pagination from "../../components/Pagination/Pagination";
 import ProductImage from "../../components/ProductImage/ProductImage";
 import { formatDateTime, getMovements, getProducts } from "../../services/admin";
 
@@ -18,18 +19,23 @@ function movementDetail(movement) {
     return parts.join(" · ") || "—";
 }
 
+const PAGE_SIZE = 100;
+
 function AdminMovements() {
     const [movements, setMovements] = useState([]);
     const [products, setProducts] = useState([]);
     const [filters, setFilters] = useState({ type: "", productId: "" });
+    const [pagination, setPagination] = useState(null);
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(true);
 
-    const load = useCallback(async (currentFilters) => {
+    const load = useCallback(async (currentFilters, page = 1) => {
         setError("");
         setIsLoading(true);
         try {
-            setMovements(await getMovements({ ...currentFilters, limit: 200 }));
+            const data = await getMovements({ ...currentFilters, page, pageSize: PAGE_SIZE });
+            setMovements(data.movements);
+            setPagination(data.pagination);
         } catch (requestError) {
             setError(requestError.message);
         } finally {
@@ -45,7 +51,12 @@ function AdminMovements() {
     const updateFilter = (key, value) => {
         const next = { ...filters, [key]: value };
         setFilters(next);
-        load(next);
+        load(next, 1);
+    };
+
+    const goToPage = (page) => {
+        load(filters, page);
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     return (
@@ -53,7 +64,7 @@ function AdminMovements() {
             <header className="adm-heading">
                 <span>INVENTARIO / MOVIMIENTOS</span>
                 <h1>Trazabilidad de movimientos</h1>
-                <p>Historial de cada cambio de stock: quién lo hizo, cuándo, de qué tipo y de dónde viene. Muestra los últimos 200 movimientos.</p>
+                <p>Historial de cada cambio de stock: quién lo hizo, cuándo, de qué tipo y de dónde viene. Se muestran 100 movimientos por página, del más reciente al más antiguo.</p>
             </header>
 
             {error && <p className="adm-message adm-message--error" role="alert">{error}</p>}
@@ -71,7 +82,7 @@ function AdminMovements() {
                             <option value="">Todos los productos</option>
                             {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
                         </select>
-                        <button type="button" className="adm-btn" onClick={() => load(filters)} disabled={isLoading} aria-label="Actualizar">
+                        <button type="button" className="adm-btn" onClick={() => load(filters, pagination?.page ?? 1)} disabled={isLoading} aria-label="Actualizar">
                             <RefreshCw size={15} />
                         </button>
                     </div>
@@ -109,6 +120,7 @@ function AdminMovements() {
                         </tbody>
                     </table>
                 </div>
+                <Pagination pagination={pagination} onChange={goToPage} disabled={isLoading} label="movimientos" />
             </section>
         </div>
     );

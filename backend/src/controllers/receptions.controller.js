@@ -9,7 +9,10 @@ const MAX_UNITS = 1000000;
 export const getReceptions = asyncHandler(async (req, res) => {
     const status = req.query.estado ? requireOneOf(req.query.estado, "El estado", STATUSES) : undefined;
     const productId = req.query.productId ? requireId(req.query.productId, "El producto") : undefined;
-    res.status(200).json({ receptions: await service.listReceptions({ status, productId }) });
+    const page = req.query.pagina ? requireInt(req.query.pagina, "La página", { min: 1, max: 1000000 }) : undefined;
+    const pageSize = req.query.tamano ? requireInt(req.query.tamano, "El tamaño de página", { min: 1, max: 200 }) : 100;
+    const { receptions, pagination } = await service.listReceptions({ status, productId, page, pageSize });
+    res.status(200).json({ receptions, ...(pagination ? { pagination } : {}) });
 });
 
 export const getReception = asyncHandler(async (req, res) => {

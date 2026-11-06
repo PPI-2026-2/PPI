@@ -1,15 +1,19 @@
-import { LogOut, UserRound, ShoppingBag } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ClipboardList, LogOut, UserRound, ShoppingBag } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getCartChangeEventName, getCartItemCount } from "../../data/shoppingCart";
 import { clearAuthSession, getAuthChangeEventName, getSessionUser } from "../../services/auth";
+
+import NotificationBell from "./NotificationBell";
 
 import "./Navbar.css";
 
 function Navbar() {
     const navigate = useNavigate();
+    const userMenuRef = useRef(null);
     const [cartCount, setCartCount] = useState(getCartItemCount);
     const [currentUser, setCurrentUser] = useState(getSessionUser);
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
     useEffect(() => {
         const updateCartCount = () => setCartCount(getCartItemCount());
@@ -31,13 +35,17 @@ function Navbar() {
         };
     }, []);
 
-    const getAccountPath = () => {
-        if (currentUser?.role === "EMPLEADO") return "/empleado";
-        if (currentUser?.role === "ADMINISTRADOR") return "/administrador/usuarios";
-        return "/";
-    };
+    // El menú de la cuenta se cierra al hacer clic fuera de él.
+    useEffect(() => {
+        const handleOutside = (event) => {
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target)) setIsUserMenuOpen(false);
+        };
+        document.addEventListener("mousedown", handleOutside);
+        return () => document.removeEventListener("mousedown", handleOutside);
+    }, []);
 
     const handleLogout = () => {
+        setIsUserMenuOpen(false);
         clearAuthSession();
         navigate("/", { replace: true });
     };
@@ -57,31 +65,59 @@ function Navbar() {
 
             <div className="navbar__actions">
 
-                <Link
-                    to={currentUser ? getAccountPath() : "/login"}
-                    className="navbar__icon"
-                    aria-label={currentUser ? `Cuenta de ${currentUser.name}` : "Iniciar sesión"}
-                    title={currentUser ? currentUser.name : "Iniciar sesión"}
-                >
-                    <UserRound
-                        size={22}
-                        strokeWidth={1.8}
-                    />
-                </Link>
+                {currentUser?.role === "USUARIO" && <NotificationBell user={currentUser} />}
 
-                {currentUser && (
-                    <>
-                        <span className="navbar__account-name">{currentUser.name}</span>
+                {currentUser ? (
+                    <div className="navbar__user" ref={userMenuRef}>
                         <button
                             type="button"
-                            className="navbar__logout"
-                            onClick={handleLogout}
-                            title="Cerrar sesión"
+                            className="navbar__user-button"
+                            onClick={() => setIsUserMenuOpen((isOpen) => !isOpen)}
+                            aria-haspopup="menu"
+                            aria-expanded={isUserMenuOpen}
+                            aria-label={`Cuenta de ${currentUser.name}`}
                         >
-                            <LogOut size={16} />
-                            <span>Cerrar sesión</span>
+                            <span className="navbar__account-name">{currentUser.name}</span>
+                            <span className="navbar__user-avatar">
+                                <UserRound size={19} strokeWidth={1.8} />
+                            </span>
                         </button>
-                    </>
+
+                        {isUserMenuOpen && (
+                            <div className="navbar__user-menu">
+                                {currentUser.role === "USUARIO" && (
+                                    <Link
+                                        to="/mis-pedidos"
+                                        className="navbar__user-menu-item"
+                                        onClick={() => setIsUserMenuOpen(false)}
+                                    >
+                                        <ClipboardList size={16} />
+                                        Mis pedidos
+                                    </Link>
+                                )}
+                                <button
+                                    type="button"
+                                    className="navbar__user-menu-item"
+                                    onClick={handleLogout}
+                                >
+                                    <LogOut size={16} />
+                                    Cerrar sesión
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <Link
+                        to="/login"
+                        className="navbar__icon"
+                        aria-label="Iniciar sesión"
+                        title="Iniciar sesión"
+                    >
+                        <UserRound
+                            size={22}
+                            strokeWidth={1.8}
+                        />
+                    </Link>
                 )}
 
                 <Link

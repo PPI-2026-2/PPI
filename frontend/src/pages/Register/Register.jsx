@@ -6,6 +6,7 @@ import { registerRequest, saveAuthSession } from "../../services/auth";
 import "../Login/Login.css";
 import "../../components/LoginForm/LoginForm.css";
 import "./Register.css";
+import "./RegisterValidation.css";
 
 function Register() {
     const navigate = useNavigate();
@@ -17,16 +18,20 @@ function Register() {
         confirmPassword: ""
     });
     const [message, setMessage] = useState("");
+    const [emailError, setEmailError] = useState("");
+    const passwordsMismatch = formData.confirmPassword.length > 0 && formData.password !== formData.confirmPassword;
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleChange = (event) => {
         const { name, value } = event.target;
         setFormData((current) => ({ ...current, [name]: value }));
+        if (name === "email") setEmailError("");
     };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
         setMessage("");
+        setEmailError("");
         if (formData.password !== formData.confirmPassword) {
             setMessage("Las contraseñas no coinciden.");
             return;
@@ -43,9 +48,14 @@ function Register() {
             saveAuthSession(session);
             navigate("/", { replace: true });
         } catch (error) {
-            setMessage(error instanceof TypeError
-                ? "No se pudo conectar con el servidor. Intenta nuevamente más tarde."
-                : error.message);
+            if (error instanceof TypeError) {
+                setMessage("No se pudo conectar con el servidor. Intenta nuevamente más tarde.");
+            } else if (/ya está en uso|ya existe/i.test(error.message)) {
+                // El correo ya está registrado: el aviso se muestra junto al campo del correo.
+                setEmailError("Esta cuenta de correo ya está en uso.");
+            } else {
+                setMessage(error.message);
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -75,7 +85,12 @@ function Register() {
 
                     <div className="login-form__field">
                         <label htmlFor="register-email">Correo electrónico</label>
-                        <input id="register-email" name="email" type="email" value={formData.email} onChange={handleChange} autoComplete="email" maxLength={100} required disabled={isSubmitting} />
+                        <input id="register-email" name="email" type="email" value={formData.email} onChange={handleChange} autoComplete="email" maxLength={100} required disabled={isSubmitting} aria-invalid={emailError ? "true" : undefined} aria-describedby={emailError ? "register-email-error" : undefined} className={emailError ? "register-input--invalid" : undefined} />
+                        {emailError && (
+                            <small id="register-email-error" className="register-form__field-error" role="alert">
+                                {emailError} <Link to="/login">Inicia sesión</Link> o usa otro correo.
+                            </small>
+                        )}
                     </div>
 
                     <div className="login-form__field">
@@ -86,10 +101,11 @@ function Register() {
 
                     <div className="login-form__field">
                         <label htmlFor="register-confirm-password">Confirmar contraseña</label>
-                        <input id="register-confirm-password" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} autoComplete="new-password" minLength={8} maxLength={72} required disabled={isSubmitting} />
+                        <input id="register-confirm-password" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} autoComplete="new-password" minLength={8} maxLength={72} required disabled={isSubmitting} aria-invalid={passwordsMismatch ? "true" : undefined} aria-describedby={passwordsMismatch ? "register-confirm-error" : undefined} className={passwordsMismatch ? "register-input--invalid" : undefined} />
+                        {passwordsMismatch && <small id="register-confirm-error" className="register-form__field-error" role="alert">Las contraseñas no coinciden.</small>}
                     </div>
 
-                    <button type="submit" className="login-form__button" disabled={isSubmitting}>
+                    <button type="submit" className="login-form__button" disabled={isSubmitting || passwordsMismatch}>
                         {isSubmitting ? "Creando cuenta…" : "Crear cuenta"}
                     </button>
                 </form>

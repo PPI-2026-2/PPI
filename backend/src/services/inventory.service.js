@@ -49,7 +49,16 @@ async function fetchInventoryRow(connection, referenceId) {
     return toInventoryRow(result.rows[0]);
 }
 
-export function listInventory({ search, productId, level } = {}) {
+// Condiciones del nivel de stock en SQL (misma regla que stockLevel): así el filtro y la paginación se hacen en la base.
+const LEVEL_SQL = {
+    AGOTADO: "(I.CANTIDAD_ACTUAL - I.CANTIDAD_RESERVADA) <= 0",
+    BAJO: "(I.CANTIDAD_ACTUAL - I.CANTIDAD_RESERVADA) > 0 AND I.STOCK_MINIMO > 0 AND (I.CANTIDAD_ACTUAL - I.CANTIDAD_RESERVADA) <= I.STOCK_MINIMO",
+    OK: "(I.CANTIDAD_ACTUAL - I.CANTIDAD_RESERVADA) > 0 AND NOT (I.STOCK_MINIMO > 0 AND (I.CANTIDAD_ACTUAL - I.CANTIDAD_RESERVADA) <= I.STOCK_MINIMO)"
+};
+
+// Sin `page` devuelve todo el inventario (lo usa la pantalla de recepciones para elegir referencias).
+// Con `page` pagina en la base (pageSize por página) y devuelve el total para armar los números de página.
+export function listInventory({ search, productId, level, page, pageSize } = {}) {
     return withConnection(async (connection) => {
         const conditions = [];
         const binds = {};
@@ -61,22 +70,42 @@ export function listInventory({ search, productId, level } = {}) {
             conditions.push("P.ID_PRODUCTO_PK = :productId");
             binds.productId = productId;
         }
-        const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-        const result = await connection.execute(
-            `${INVENTORY_SELECT} ${where} ORDER BY P.NOMBRE_PRODUCTO, T.NOMBRE_TALLA`,
+        const baseWhere = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+        const rowConditions = level ? [...conditions, `(${LEVEL_SQL[level]})`] : conditions;
+        const rowWhere = rowConditions.length ? `WHERE ${rowConditions.join(" AND ")}` : "";
+        const fromClause = `FROM INVENTARIO I
+          JOIN REFERENCIA_PRODUCTO RF ON RF.ID_REFERENCIA_PK = I.ID_REFERENCIA_FK
+          JOIN PRODUCTOS P            ON P.ID_PRODUCTO_PK    = RF.ID_PRODUCTO_FK
+          JOIN TALLA T                ON T.ID_TALLA_PK       = RF.ID_TALLA_FK`;
+
+        // Resumen sobre todo el inventario que cumple búsqueda/producto (no solo la página visible).
+        const summaryResult = await connection.execute(
+            `SELECT COUNT(*) AS REFS, NVL(SUM(I.CANTIDAD_ACTUAL), 0) AS UNITS, NVL(SUM(I.CANTIDAD_RESERVADA), 0) AS RESERVED,
+                    NVL(SUM(CASE WHEN ${LEVEL_SQL.AGOTADO} THEN 1 ELSE 0 END), 0) AS SOLD_OUT,
+                    NVL(SUM(CASE WHEN ${LEVEL_SQL.BAJO} THEN 1 ELSE 0 END), 0) AS LOW
+               ${fromClause} ${baseWhere}`,
             binds,
             OBJECT
         );
-        const all = result.rows.map(toInventoryRow);
-        const items = level ? all.filter((item) => item.level === level) : all;
-        const summary = {
-            references: all.length,
-            units: all.reduce((sum, item) => sum + item.onHand, 0),
-            reserved: all.reduce((sum, item) => sum + item.reserved, 0),
-            soldOut: all.filter((item) => item.level === "AGOTADO").length,
-            low: all.filter((item) => item.level === "BAJO").length
-        };
-        return { items, summary };
+        const sum = summaryResult.rows[0];
+        const summary = { references: sum.REFS, units: sum.UNITS, reserved: sum.RESERVED, soldOut: sum.SOLD_OUT, low: sum.LOW };
+
+        const order = "ORDER BY P.NOMBRE_PRODUCTO, T.NOMBRE_TALLA, RF.ID_REFERENCIA_PK";
+        if (!page) {
+            const result = await connection.execute(`${INVENTORY_SELECT} ${rowWhere} ${order}`, binds, OBJECT);
+            return { items: result.rows.map(toInventoryRow), summary };
+        }
+
+        const countResult = await connection.execute(`SELECT COUNT(*) AS TOTAL ${fromClause} ${rowWhere}`, binds, OBJECT);
+        const total = countResult.rows[0].TOTAL;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        const current = Math.min(page, totalPages);
+        const result = await connection.execute(
+            `${INVENTORY_SELECT} ${rowWhere} ${order} OFFSET :offsetRows ROWS FETCH NEXT :maxRows ROWS ONLY`,
+            { ...binds, offsetRows: (current - 1) * pageSize, maxRows: pageSize },
+            OBJECT
+        );
+        return { items: result.rows.map(toInventoryRow), summary, pagination: { page: current, pageSize, total, totalPages } };
     });
 }
 

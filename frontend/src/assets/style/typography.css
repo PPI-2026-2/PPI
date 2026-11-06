@@ -1,0 +1,26 @@
+/* Tipografía unificada: los controles del navegador (botones, campos, selectores, tablas) usan por defecto una fuente propia
+   y distinta a la del resto de la página. Aquí heredan la misma fuente y el mismo suavizado del texto de la aplicación,
+   así el usuario, el empleado y el administrador ven la misma tipografía en textos, botones y formularios. */
+button,
+input,
+select,
+textarea,
+optgroup,
+table,
+th,
+td {
+    font-family: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+    letter-spacing: inherit;
+}
+
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}

@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { RefreshCw, Search } from "lucide-react";
 
+import Pagination from "../../components/Pagination/Pagination";
 import ProductImage from "../../components/ProductImage/ProductImage";
 import { adjustInventory, getInventory, setInventoryMinimum } from "../../services/admin";
 
@@ -12,11 +13,13 @@ const levelBadge = {
 };
 const levelLabel = { OK: "Normal", BAJO: "Bajo", AGOTADO: "Agotado" };
 
+const PAGE_SIZE = 100;
 const emptySummary = { references: 0, units: 0, reserved: 0, soldOut: 0, low: 0 };
 
 function AdminInventory() {
     const [items, setItems] = useState([]);
     const [summary, setSummary] = useState(emptySummary);
+    const [pagination, setPagination] = useState(null);
     const [filters, setFilters] = useState({ q: "", level: "" });
     const [editing, setEditing] = useState(null); // { referenceId, mode: "adjust" | "minimum" }
     const [editForm, setEditForm] = useState({ quantity: "", observation: "", minimum: "" });
@@ -25,13 +28,14 @@ function AdminInventory() {
     const [isLoading, setIsLoading] = useState(true);
     const [isBusy, setIsBusy] = useState(false);
 
-    const load = useCallback(async (currentFilters) => {
+    const load = useCallback(async (currentFilters, page = 1) => {
         setError("");
         setIsLoading(true);
         try {
-            const data = await getInventory(currentFilters);
+            const data = await getInventory({ ...currentFilters, page, pageSize: PAGE_SIZE });
             setItems(data.items);
             setSummary(data.summary);
+            setPagination(data.pagination);
         } catch (requestError) {
             setError(requestError.message);
         } finally {
@@ -45,13 +49,19 @@ function AdminInventory() {
 
     const handleSearch = (event) => {
         event.preventDefault();
-        load(filters);
+        load(filters, 1);
+    };
+
+    const goToPage = (page) => {
+        setEditing(null);
+        load(filters, page);
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     const handleLevel = (level) => {
         const next = { ...filters, level };
         setFilters(next);
-        load(next);
+        load(next, 1);
     };
 
     const openEditor = (item, mode) => {
@@ -75,7 +85,7 @@ function AdminInventory() {
                 setNotice(`Stock mínimo actualizado para ${item.productName} talla ${item.sizeName}.`);
             }
             setEditing(null);
-            await load(filters);
+            await load(filters, pagination?.page ?? 1);
         } catch (requestError) {
             setError(requestError.message);
         } finally {
@@ -88,7 +98,7 @@ function AdminInventory() {
             <header className="adm-heading">
                 <span>INVENTARIO / STOCK</span>
                 <h1>Control de inventario</h1>
-                <p>Existencias por producto y talla. El stock sube con las recepciones confirmadas y baja con las entregas de pedidos; los ajustes manuales quedan registrados.</p>
+                <p>Existencias por producto y talla. El stock sube con las recepciones confirmadas y baja con las entregas de pedidos; los ajustes manuales quedan registrados. Se muestran 100 referencias por página.</p>
             </header>
 
             <div className="adm-stats">
@@ -116,7 +126,7 @@ function AdminInventory() {
                             <option value="BAJO">Bajo mínimo</option>
                             <option value="AGOTADO">Agotado</option>
                         </select>
-                        <button type="button" className="adm-btn" onClick={() => load(filters)} disabled={isLoading} aria-label="Actualizar">
+                        <button type="button" className="adm-btn" onClick={() => load(filters, pagination?.page ?? 1)} disabled={isLoading} aria-label="Actualizar">
                             <RefreshCw size={15} />
                         </button>
                     </div>
@@ -200,6 +210,7 @@ function AdminInventory() {
                         </tbody>
                     </table>
                 </div>
+                <Pagination pagination={pagination} onChange={goToPage} disabled={isLoading} label="referencias" />
             </section>
         </div>
     );

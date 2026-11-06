@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, RefreshCw, Search } from "lucide-react";
+import { Plus, RefreshCw, Search, X } from "lucide-react";
 
 import ProductImage from "../../components/ProductImage/ProductImage";
 import { createProduct, formatPrice, getProducts, getSizes, getSuppliers } from "../../services/admin";
@@ -125,7 +125,7 @@ function AdminProducts() {
                         </button>
                     </div>
                     <button type="button" className="adm-btn adm-btn--primary" onClick={() => setShowForm((previous) => !previous)}>
-                        <Plus size={15} /> {showForm ? "Cerrar formulario" : "Nuevo producto"}
+                        {showForm ? <X size={15} /> : <Plus size={15} />} {showForm ? "Cerrar formulario" : "Nuevo producto"}
                     </button>
                 </div>
 

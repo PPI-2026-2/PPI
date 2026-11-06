@@ -1,0 +1,5 @@
+/* Avisos de validación del formulario de registro (correo ya usado y contraseñas que no coinciden). */
+.register-form__field-error { display: block; margin-top: 6px; color: #b3261e; font-size: 12px; line-height: 1.45; }
+.register-form__field-error a { color: inherit; font-weight: 700; text-decoration: underline; }
+.register-form input.register-input--invalid { border-color: #b3261e; outline-color: #b3261e; }
+.register-form .login-form__button:disabled { cursor: not-allowed; opacity: .6; }

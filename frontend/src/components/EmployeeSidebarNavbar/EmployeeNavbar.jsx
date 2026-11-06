@@ -4,12 +4,12 @@ import {
     Moon,
     Sun,
     Palette,
-    LogOut,
     Boxes
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { clearAuthSession, getSessionUser } from "../../services/auth";
+import EmployeeUserMenu from "../EmployeeUserMenu/EmployeeUserMenu";
 
 import "./EmployeeNavbar.css";
 
@@ -23,7 +23,16 @@ function EmployeeNavbar({
 }) {
     const navigate = useNavigate();
     const [isPaletteMenuOpen, setIsPaletteMenuOpen] = useState(false);
+    const paletteRef = useRef(null);
     const currentUser = getSessionUser();
+
+    useEffect(() => {
+        const handleOutside = (event) => {
+            if (paletteRef.current && !paletteRef.current.contains(event.target)) setIsPaletteMenuOpen(false);
+        };
+        document.addEventListener("mousedown", handleOutside);
+        return () => document.removeEventListener("mousedown", handleOutside);
+    }, []);
 
     const palettes = [
         { id: "azure-soft", name: "Suave", description: "Azul grisáceo y fondos opacos", swatch: "#176b9a" },
@@ -67,13 +76,7 @@ function EmployeeNavbar({
 
             <div className="employee-navbar__right">
 
-                <span className="employee-navbar__user-name">
-                    <span className="employee-navbar__user-avatar">E</span>
-                    <span>{currentUser?.name || "Empleado"}</span>
-                </span>
-
-
-                <div className="employee-navbar__palette-picker">
+                <div className="employee-navbar__palette-picker" ref={paletteRef}>
                     <button
                         type="button"
                         className="employee-navbar__icon-button"
@@ -127,18 +130,13 @@ function EmployeeNavbar({
                     )}
                 </button>
 
-                <button
-                    type="button"
-                    className="employee-navbar__logout"
-                    onClick={() => {
+                <EmployeeUserMenu
+                    user={currentUser}
+                    onLogout={() => {
                         clearAuthSession();
                         navigate("/", { replace: true });
                     }}
-                    title="Cerrar sesión"
-                >
-                    <LogOut size={17} />
-                    <span>Cerrar sesión</span>
-                </button>
+                />
 
             </div>
 

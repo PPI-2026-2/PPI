@@ -43,7 +43,8 @@ async function fetchReception(connection, id) {
     return toReception(result.rows[0]);
 }
 
-export function listReceptions({ status, productId } = {}) {
+// Sin `page`: lista corta (las 200 más recientes). Con `page`: paginación real (pageSize por página) con el total.
+export function listReceptions({ status, productId, page, pageSize = 100 } = {}) {
     return withConnection(async (connection) => {
         const conditions = [];
         const binds = {};
@@ -56,14 +57,31 @@ export function listReceptions({ status, productId } = {}) {
             binds.productId = productId;
         }
         const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-        const result = await connection.execute(
-            `${RECEPTION_SELECT} ${where}
-              ORDER BY R.FECHA_INGRESO DESC, R.ID_RECEPCION_PK DESC
-              FETCH FIRST 200 ROWS ONLY`,
+        const order = "ORDER BY R.FECHA_INGRESO DESC, R.ID_RECEPCION_PK DESC";
+
+        if (!page) {
+            const result = await connection.execute(`${RECEPTION_SELECT} ${where} ${order} FETCH FIRST 200 ROWS ONLY`, binds, OBJECT);
+            return { receptions: result.rows.map(toReception), pagination: null };
+        }
+
+        const countResult = await connection.execute(
+            `SELECT COUNT(*) AS TOTAL
+               FROM RECEPCION R
+               JOIN REFERENCIA_PRODUCTO RF ON RF.ID_REFERENCIA_PK = R.ID_REFERENCIA_FK
+               JOIN PRODUCTOS P            ON P.ID_PRODUCTO_PK    = RF.ID_PRODUCTO_FK
+              ${where}`,
             binds,
             OBJECT
         );
-        return result.rows.map(toReception);
+        const total = countResult.rows[0]?.TOTAL ?? 0;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        const current = Math.min(page, totalPages);
+        const result = await connection.execute(
+            `${RECEPTION_SELECT} ${where} ${order} OFFSET :offsetRows ROWS FETCH NEXT :maxRows ROWS ONLY`,
+            { ...binds, offsetRows: (current - 1) * pageSize, maxRows: pageSize },
+            OBJECT
+        );
+        return { receptions: result.rows.map(toReception), pagination: { page: current, pageSize, total, totalPages } };
     });
 }
 

@@ -9,7 +9,9 @@ export const getInventory = asyncHandler(async (req, res) => {
     const search = optionalString(req.query.q, "La búsqueda", { max: 100 }) ?? undefined;
     const productId = req.query.productId ? requireId(req.query.productId, "El producto") : undefined;
     const level = req.query.nivel ? requireOneOf(req.query.nivel, "El nivel", LEVELS) : undefined;
-    res.status(200).json(await service.listInventory({ search, productId, level }));
+    const page = req.query.pagina ? requireInt(req.query.pagina, "La página", { min: 1, max: 1000000 }) : undefined;
+    const pageSize = req.query.tamano ? requireInt(req.query.tamano, "El tamaño de página", { min: 1, max: 200 }) : 100;
+    res.status(200).json(await service.listInventory({ search, productId, level, page, pageSize }));
 });
 
 export const setInventoryMinimum = asyncHandler(async (req, res) => {

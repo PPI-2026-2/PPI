@@ -81,12 +81,14 @@ export async function setProductSizeStatus(id, referenceId, status) {
 }
 
 // Recepciones de mercancía
-export async function getReceptions({ status, productId } = {}) {
+export async function getReceptions({ status, productId, page, pageSize } = {}) {
     const params = new URLSearchParams();
+    if (page) params.set("pagina", page);
+    if (pageSize) params.set("tamano", pageSize);
     if (status) params.set("estado", status);
     if (productId) params.set("productId", productId);
     const query = params.toString();
-    return (await request(`/recepciones${query ? `?${query}` : ""}`)).receptions;
+    return request(`/recepciones${query ? `?${query}` : ""}`); // { receptions, pagination? }
 }
 export async function createReception(reception) {
     return (await request("/recepciones", { method: "POST", body: reception })).reception;
@@ -99,13 +101,15 @@ export async function cancelReception(id, observation) {
 }
 
 // Inventario
-export async function getInventory({ q, level, productId } = {}) {
+export async function getInventory({ q, level, productId, page, pageSize } = {}) {
     const params = new URLSearchParams();
+    if (page) params.set("pagina", page);
+    if (pageSize) params.set("tamano", pageSize);
     if (q) params.set("q", q);
     if (level) params.set("nivel", level);
     if (productId) params.set("productId", productId);
     const query = params.toString();
-    return request(`/inventario${query ? `?${query}` : ""}`); // { items, summary }
+    return request(`/inventario${query ? `?${query}` : ""}`); // { items, summary, pagination? }
 }
 export async function setInventoryMinimum(referenceId, minimum) {
     return (await request(`/inventario/${referenceId}/minimo`, { method: "PATCH", body: { minimum } })).item;
@@ -115,13 +119,15 @@ export async function adjustInventory(referenceId, quantity, observation) {
 }
 
 // Movimientos
-export async function getMovements({ type, productId, limit } = {}) {
+export async function getMovements({ type, productId, limit, page, pageSize } = {}) {
     const params = new URLSearchParams();
+    if (page) params.set("pagina", page);
+    if (pageSize) params.set("tamano", pageSize);
     if (type) params.set("tipo", type);
     if (productId) params.set("productId", productId);
     if (limit) params.set("limit", limit);
     const query = params.toString();
-    return (await request(`/movimientos${query ? `?${query}` : ""}`)).movements;
+    return request(`/movimientos${query ? `?${query}` : ""}`); // { movements, pagination? }
 }
 
 export const formatDateTime = (value) =>
