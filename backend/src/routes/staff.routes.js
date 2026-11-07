@@ -1,7 +1,7 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
 
-import { createStaffAccount, getStaff } from "../controllers/staff.controller.js";
+import { changeStaffStatus, createStaffAccount, getStaff } from "../controllers/staff.controller.js";
 
 const staffRouter = Router();
 const createStaffLimiter = rateLimit({
@@ -14,5 +14,6 @@ const createStaffLimiter = rateLimit({
 
 staffRouter.get("/", getStaff);
 staffRouter.post("/", createStaffLimiter, createStaffAccount);
+staffRouter.patch("/:id/estado", changeStaffStatus);
 
 export default staffRouter;

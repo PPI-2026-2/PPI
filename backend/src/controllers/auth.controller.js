@@ -1,5 +1,5 @@
 import { authenticateUser, AuthError, createAccessToken } from "../services/auth.service.js";
-import { createUser, UserServiceError } from "../services/users.service.js";
+import { createUser, getActiveUser, UserServiceError } from "../services/users.service.js";
 
 function validateRegistration(body) {
     const { firstName, lastName, email, password } = body ?? {};
@@ -27,7 +27,7 @@ export async function login(req, res, next) {
 
         const user = await authenticateUser(email, password);
         const accessToken = createAccessToken(user);
-        return res.status(200).json({ accessToken, tokenType: "Bearer", expiresIn: process.env.JWT_EXPIRES_IN || "15m", user });
+        return res.status(200).json({ accessToken, tokenType: "Bearer", expiresIn: process.env.JWT_EXPIRES_IN || "30m", user });
     } catch (error) {
         if (error instanceof AuthError) {
             return res.status(error.statusCode).json({ message: error.message });
@@ -41,11 +41,23 @@ export async function register(req, res, next) {
         const userData = validateRegistration(req.body);
         const user = await createUser({ ...userData, role: "USUARIO" });
         const accessToken = createAccessToken(user);
-        return res.status(201).json({ accessToken, tokenType: "Bearer", expiresIn: process.env.JWT_EXPIRES_IN || "15m", user });
+        return res.status(201).json({ accessToken, tokenType: "Bearer", expiresIn: process.env.JWT_EXPIRES_IN || "30m", user });
     } catch (error) {
         if (error instanceof UserServiceError) {
             return res.status(error.statusCode).json({ message: error.message });
         }
+        return next(error);
+    }
+}
+
+// Entrega un token nuevo mientras la persona siga usando el sistema. requireAuth ya comprobó que la cuenta está activa.
+export async function renewSession(req, res, next) {
+    try {
+        const user = await getActiveUser(Number(req.auth.sub));
+        if (!user) return res.status(401).json({ message: "Tu cuenta fue desactivada. Contacta al administrador." });
+        const accessToken = createAccessToken(user);
+        return res.status(200).json({ accessToken, tokenType: "Bearer", expiresIn: process.env.JWT_EXPIRES_IN || "30m", user });
+    } catch (error) {
         return next(error);
     }
 }

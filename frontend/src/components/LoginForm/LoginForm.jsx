@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { loginRequest, saveAuthSession } from "../../services/auth";
+import { clearSessionNotice, readSessionNotice } from "../../services/session";
 
 import "./LoginForm.css";
 
@@ -14,6 +15,11 @@ function LoginForm() {
     });
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [notice] = useState(readSessionNotice);
+
+    useEffect(() => {
+        clearSessionNotice();
+    }, []);
 
     const handleChange = (event) => {
 
@@ -67,6 +73,12 @@ function LoginForm() {
             className="login-form"
             onSubmit={handleSubmit}
         >
+
+            {notice && !error && (
+                <p className="login-form__notice" role="status">
+                    {notice}
+                </p>
+            )}
 
             {error && (
                 <p className="login-form__error" role="alert">

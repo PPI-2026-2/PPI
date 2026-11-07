@@ -64,6 +64,6 @@ export function createAccessToken(user) {
     return jwt.sign(
         { email: user.email, role: user.role, name: user.name },
         secret,
-        { subject: user.id, expiresIn: process.env.JWT_EXPIRES_IN || "15m", issuer: "stockplan-api", audience: "stockplan-frontend" }
+        { subject: user.id, expiresIn: process.env.JWT_EXPIRES_IN || "30m", issuer: "stockplan-api", audience: "stockplan-frontend" }
     );
 }

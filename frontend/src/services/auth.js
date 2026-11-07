@@ -1,6 +1,8 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 const TOKEN_KEY = "stockplan-access-token";
 const USER_KEY = "stockplan-auth-user";
+const TOKEN_TIME_KEY = "stockplan-token-time";
+const ACTIVITY_KEY = "stockplan-last-activity";
 const AUTH_CHANGE_EVENT = "stockplan-auth-changed";
 
 async function parseResponse(response) {
@@ -51,6 +53,14 @@ export async function getStaffAccounts() {
     return data.users;
 }
 
+export async function setStaffStatus(id, status) {
+    const data = await adminRequest(`/${id}/estado`, {
+        method: "PATCH",
+        body: JSON.stringify({ status })
+    });
+    return data.user;
+}
+
 export async function createStaffAccount(account) {
     const data = await adminRequest("", {
         method: "POST",
@@ -62,7 +72,27 @@ export async function createStaffAccount(account) {
 export function saveAuthSession({ accessToken, user }) {
     sessionStorage.setItem(TOKEN_KEY, accessToken);
     sessionStorage.setItem(USER_KEY, JSON.stringify(user));
+    sessionStorage.setItem(TOKEN_TIME_KEY, String(Date.now()));
+    sessionStorage.setItem(ACTIVITY_KEY, String(Date.now()));
     window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
+}
+
+// Renovación silenciosa: cambia el token sin avisar a la interfaz, porque la persona no cambió.
+export function updateAccessToken(accessToken) {
+    sessionStorage.setItem(TOKEN_KEY, accessToken);
+    sessionStorage.setItem(TOKEN_TIME_KEY, String(Date.now()));
+}
+
+export function getTokenTime() {
+    return Number(sessionStorage.getItem(TOKEN_TIME_KEY)) || 0;
+}
+
+export function getLastActivity() {
+    return Number(sessionStorage.getItem(ACTIVITY_KEY)) || 0;
+}
+
+export function touchActivity() {
+    sessionStorage.setItem(ACTIVITY_KEY, String(Date.now()));
 }
 
 export function getAccessToken() {
@@ -80,6 +110,8 @@ export function getSessionUser() {
 export function clearAuthSession() {
     sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(USER_KEY);
+    sessionStorage.removeItem(TOKEN_TIME_KEY);
+    sessionStorage.removeItem(ACTIVITY_KEY);
     window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
 }
 

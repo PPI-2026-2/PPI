@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw, UserPlus, Users } from "lucide-react";
 
-import { createStaffAccount, getStaffAccounts } from "../../services/auth";
+import { createStaffAccount, getSessionUser, getStaffAccounts, setStaffStatus } from "../../services/auth";
 
 import "./AdminUsers.css";
 
@@ -14,6 +14,9 @@ function AdminUsers() {
     const [notice, setNotice] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [confirmingId, setConfirmingId] = useState(null);
+    const [busyId, setBusyId] = useState(null);
+    const currentUserId = String(getSessionUser()?.id ?? "");
 
     const loadUsers = useCallback(async () => {
         setError("");
@@ -53,13 +56,47 @@ function AdminUsers() {
         }
     };
 
+    const handleStatus = async (user, status) => {
+        setError("");
+        setNotice("");
+        setBusyId(user.id);
+        try {
+            const updated = await setStaffStatus(user.id, status);
+            setUsers((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+            setNotice(status === "INACTIVO"
+                ? `${user.firstName} ${user.lastName} ya no puede entrar al sistema; su sesión abierta se cerró.`
+                : `${user.firstName} ${user.lastName} puede volver a entrar al sistema.`);
+            setConfirmingId(null);
+        } catch (requestError) {
+            setError(requestError.message);
+        } finally {
+            setBusyId(null);
+        }
+    };
+
+    const renderAction = (user) => {
+        if (user.id === currentUserId) return <small className="admin-users-self">Tu cuenta</small>;
+        if (user.status === "INACTIVO") {
+            return <button type="button" className="admin-users-action" disabled={busyId === user.id} onClick={() => handleStatus(user, "ACTIVO")}>Activar</button>;
+        }
+        if (confirmingId === user.id) {
+            return (
+                <span className="admin-users-confirm" role="group" aria-label={`Confirmar desactivar a ${user.firstName} ${user.lastName}`}>
+                    <button type="button" className="admin-users-action admin-users-action--danger" disabled={busyId === user.id} onClick={() => handleStatus(user, "INACTIVO")}>Sí, desactivar</button>
+                    <button type="button" className="admin-users-action" disabled={busyId === user.id} onClick={() => setConfirmingId(null)}>No</button>
+                </span>
+            );
+        }
+        return <button type="button" className="admin-users-action" onClick={() => setConfirmingId(user.id)}>Desactivar</button>;
+    };
+
     return (
         <div className="admin-users-page">
             <div className="admin-users-content">
                 <header className="admin-users-heading">
                     <span>GESTIÓN / CUENTAS</span>
                     <h1>Personal y roles</h1>
-                    <p>Crea cuentas de empleados y administradores. Los clientes se registran por su cuenta desde el registro público.</p>
+                    <p>Crea cuentas de empleados y administradores, y desactiva las que ya no deban entrar. Los clientes se registran por su cuenta desde el registro público.</p>
                 </header>
 
                 <section className="admin-users-card admin-users-create">
@@ -81,11 +118,11 @@ function AdminUsers() {
                     {error && !users.length && <p className="admin-users-message admin-users-message--error" role="alert">{error}</p>}
                     <div className="admin-users-table-wrap">
                         <table className="admin-users-table">
-                            <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th></tr></thead>
+                            <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Acción</th></tr></thead>
                             <tbody>
-                                {users.map((user) => <tr key={user.id}><td>{user.firstName} {user.lastName}</td><td>{user.email}</td><td><span className={`admin-role admin-role--${user.role.toLowerCase()}`}>{user.role}</span></td><td>{user.status}</td></tr>)}
-                                {!isLoading && users.length === 0 && <tr><td colSpan="4" className="admin-users-empty">No hay personal para mostrar.</td></tr>}
-                                {isLoading && <tr><td colSpan="4" className="admin-users-empty">Cargando personal…</td></tr>}
+                                {users.map((user) => <tr key={user.id}><td>{user.firstName} {user.lastName}</td><td>{user.email}</td><td><span className={`admin-role admin-role--${user.role.toLowerCase()}`}>{user.role}</span></td><td><span className={`admin-users-status admin-users-status--${user.status.toLowerCase()}`}>{user.status === "ACTIVO" ? "Activo" : "Inactivo"}</span></td><td>{renderAction(user)}</td></tr>)}
+                                {!isLoading && users.length === 0 && <tr><td colSpan="5" className="admin-users-empty">No hay personal para mostrar.</td></tr>}
+                                {isLoading && <tr><td colSpan="5" className="admin-users-empty">Cargando personal…</td></tr>}
                             </tbody>
                         </table>
                     </div>

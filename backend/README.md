@@ -1,14 +1,21 @@
-# StockPlan Backend
+# StockPlan: backend
 
-Requiere Node.js 20 o superior y Oracle 19c accesible desde el equipo.
+API REST con Node.js, Express y Oracle. La guía general está en el [README principal](../README.md).
 
-1. Copiar `.env.example` a `.env` y completar localmente la conexión de Oracle, CORS y el secreto JWT.
-2. Ejecutar `npm install`.
-3. Confirmar que las tablas de `database/script/stockplan_schema.sql` están creadas. Si hace falta poblar roles en una BD existente, ejecutar `../database/script/usuario_registration_migration.sql` desde SQL Developer.
-4. Ejecutar `npm run bootstrap:admin` para crear la primera cuenta administradora; la contraseña se pide sin mostrarla.
-5. Ejecutar `npm run dev`.
-6. Comprobar `GET http://localhost:3000/api/health`.
+## Comandos
 
-El esquema usa `USUARIO.PASSWORD_HASH`, estado `ACTIVO`, `ID_ROL_FK` y tablas `ROL` con IDs identity. Registro público: `POST /api/auth/register` (asigna únicamente `USUARIO`). Login: `POST /api/auth/login`; perfil autenticado: `GET /api/auth/me` con Bearer JWT. Gestión de roles: `/api/admin/users`, requiere JWT `ADMINISTRADOR`.
+| Comando | Función |
+|---|---|
+| `npm run dev` | Arranca con recarga automática |
+| `npm start` | Arranca sin recarga |
+| `npm run bootstrap:admin` | Crea el primer administrador; se niega si ya existe uno |
 
-El servicio requiere que `PASSWORD_HASH` contenga hashes bcrypt y que `ROL` tenga sembrados los tres roles permitidos. No se incluye ni se sube un `.env` real. Ver `../docs/database/usuario.md` antes de probar una cuenta.
+## Configuración
+
+Copia `.env.example` a `.env` y completa los valores. El archivo explica cada variable. `JWT_SECRET` debe tener al menos 32 bytes aleatorios. El `.env` no se sube al repositorio.
+
+## Más información
+
+- [Referencia de la API](../docs/api/endpoints.md)
+- [Arquitectura del sistema](../docs/arquitectura/sistema.md)
+- [Modelo de datos](../docs/database/modelo-de-datos.md)

@@ -83,6 +83,86 @@ export async function createUser({ firstName, lastName, email, password, role = 
     }
 }
 
+const STAFF_ROLES = new Set(["EMPLEADO", "ADMINISTRADOR"]);
+
+export async function isUserActive(userId) {
+    const connection = await getOracleConnection();
+    try {
+        const result = await connection.execute(
+            "SELECT ESTADO FROM USUARIO WHERE ID_USUARIO_PK = :userId",
+            { userId },
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+        return String(result.rows[0]?.ESTADO ?? "").trim().toUpperCase() === "ACTIVO";
+    } finally {
+        await connection.close();
+    }
+}
+
+// Datos para renovar la sesión; null si la cuenta no existe o no está activa.
+export async function getActiveUser(userId) {
+    const connection = await getOracleConnection();
+    try {
+        const result = await connection.execute(
+            `SELECT U.ID_USUARIO_PK, U.NOMBRE_US, U.APELLIDO_US, U.EMAIL, R.NOMBRE_ROL
+               FROM USUARIO U
+               JOIN ROL R ON R.ID_ROL_PK = U.ID_ROL_FK
+              WHERE U.ID_USUARIO_PK = :userId AND U.ESTADO = 'ACTIVO'`,
+            { userId },
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+        const row = result.rows[0];
+        if (!row) return null;
+        return {
+            id: String(row.ID_USUARIO_PK),
+            name: `${row.NOMBRE_US} ${row.APELLIDO_US}`.trim(),
+            email: row.EMAIL,
+            role: String(row.NOMBRE_ROL).trim().toUpperCase()
+        };
+    } finally {
+        await connection.close();
+    }
+}
+
+// Activa o desactiva una cuenta de personal. Una cuenta inactiva no puede entrar y pierde su sesión abierta.
+// Nadie se desactiva a sí mismo: así siempre queda al menos un administrador activo.
+export async function setStaffStatus(targetId, status, actingUserId) {
+    if (targetId === actingUserId) {
+        throw new UserServiceError("No puedes cambiar el estado de tu propia cuenta.", 409);
+    }
+    const connection = await getOracleConnection();
+    try {
+        const found = await connection.execute(
+            `SELECT U.NOMBRE_US, U.APELLIDO_US, U.EMAIL, R.NOMBRE_ROL
+               FROM USUARIO U
+               JOIN ROL R ON R.ID_ROL_PK = U.ID_ROL_FK
+              WHERE U.ID_USUARIO_PK = :targetId`,
+            { targetId },
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+        const row = found.rows[0];
+        const role = String(row?.NOMBRE_ROL ?? "").trim().toUpperCase();
+        if (!row || !STAFF_ROLES.has(role)) {
+            throw new UserServiceError("La cuenta de personal no existe.", 404);
+        }
+        await connection.execute(
+            "UPDATE USUARIO SET ESTADO = :status WHERE ID_USUARIO_PK = :targetId",
+            { status, targetId },
+            { autoCommit: true }
+        );
+        return {
+            id: String(targetId),
+            firstName: row.NOMBRE_US,
+            lastName: row.APELLIDO_US,
+            email: row.EMAIL,
+            status,
+            role
+        };
+    } finally {
+        await connection.close();
+    }
+}
+
 export async function listUsers() {
     const connection = await getOracleConnection();
     try {

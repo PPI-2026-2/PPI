@@ -1,4 +1,5 @@
-import { createUser, listUsers, UserServiceError } from "../services/users.service.js";
+import { createUser, listUsers, setStaffStatus, UserServiceError } from "../services/users.service.js";
+import { requireId, requireOneOf } from "../utils/validators.js";
 
 // Solo el personal interno se gestiona desde aquí.
 // Los clientes (USUARIO) se crean únicamente con el registro público.
@@ -9,6 +10,21 @@ export async function getStaff(_req, res, next) {
         const users = await listUsers();
         return res.status(200).json({ users: users.filter((user) => STAFF_ROLES.has(user.role)) });
     } catch (error) {
+        return next(error);
+    }
+}
+
+// El administrador activa o desactiva cuentas de empleados y administradores.
+export async function changeStaffStatus(req, res, next) {
+    try {
+        const targetId = requireId(req.params.id, "La cuenta");
+        const status = requireOneOf(req.body?.status, "El estado", ["ACTIVO", "INACTIVO"]);
+        const user = await setStaffStatus(targetId, status, requireId(req.auth.sub, "El usuario"));
+        return res.status(200).json({ user });
+    } catch (error) {
+        if (error instanceof UserServiceError) {
+            return res.status(error.statusCode).json({ message: error.message });
+        }
         return next(error);
     }
 }
