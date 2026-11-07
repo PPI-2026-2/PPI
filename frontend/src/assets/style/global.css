@@ -35,3 +35,58 @@ img {
     display: block;
     max-width: 100%;
 }
+
+/* Validación de formularios: campo marcado y su mensaje (ver utils/validation.js). */
+input[aria-invalid="true"],
+select[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+    border-color: var(--adm-danger, #b3261e) !important;
+    outline-color: var(--adm-danger, #b3261e);
+}
+
+small.field-error,
+.adm-field small.field-error,
+.admin-users-form label small.field-error {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+    color: var(--adm-danger, #b3261e);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+small.field-error svg {
+    flex: 0 0 auto;
+}
+
+.password-checklist {
+    display: grid;
+    gap: 3px;
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+    color: var(--adm-muted, #6b6b6b);
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.password-checklist li {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.password-checklist li.is-ok {
+    color: var(--adm-success, #1e7a3c);
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}

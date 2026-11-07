@@ -62,7 +62,7 @@ try {
     const email = (await prompt.question("Correo electrónico: ")).trim();
     prompt.close();
 
-    const password = await askHidden("Contraseña (mínimo 8 caracteres, entrada oculta): ");
+    const password = await askHidden("Contraseña (mínimo 8 caracteres, con mayúscula, minúscula, número y símbolo; entrada oculta): ");
     const confirmation = await askHidden("Confirmar contraseña: ");
     if (password !== confirmation) throw new Error("Las contraseñas no coinciden.");
 

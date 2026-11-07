@@ -51,7 +51,7 @@ El carrito se guarda en el navegador (`data/shoppingCart.js`) y solo llega a Ora
 | Productos (`/productos`) | `admin.getProducts`, `createProduct` | `GET`, `POST /admin/productos` | PRODUCTOS, REFERENCIA_PRODUCTO, INVENTARIO, PROVEEDOR, TALLA |
 | Detalle de producto (`/productos/:id`) | `getProduct`, `updateProduct`, `setProductStatus`, `addProductSize`, `setProductSizeStatus` | `/admin/productos/:id...` | Las mismas |
 | Proveedores y tallas (`/catalogo`) | `getSuppliers`, `createSupplier`, `updateSupplier`, `getSizes`, `createSize` | `/admin/proveedores`, `/admin/tallas` | PROVEEDOR, TALLA |
-| Recepciones (`/recepciones`) | `getReceptions`, `createReception`, `confirmReception`, `cancelReception` | `/admin/recepciones...` | RECEPCION, INVENTARIO, MOVIMIENTO_INVENTARIO |
+| Recepciones (`/recepciones`) | `getReceptions`, `receiveDelivery` (varias tallas en un clic), `confirmReception` y `cancelReception` (recepciones antiguas sin confirmar) | `/admin/recepciones...` | RECEPCION, INVENTARIO, MOVIMIENTO_INVENTARIO |
 | Stock (`/inventario`) | `getInventory`, `setInventoryMinimum`, `adjustInventory` | `/admin/inventario...` | INVENTARIO, MOVIMIENTO_INVENTARIO |
 | Movimientos (`/movimientos`) | `getMovements` | `GET /admin/movimientos` | MOVIMIENTO_INVENTARIO, USUARIO |
 | Pedidos (`/pedidos`) | `adminOrders.getAdminOrders`, `getAdminOrder`, `getClaimedValue`, `cancelUnclaimedOrder`, `cancelIncompleteOrder` | `/admin/pedidos...` | PEDIDO, DETALLE_PEDIDO, PROCESO_PEDIDO, INVENTARIO |

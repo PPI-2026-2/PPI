@@ -8,6 +8,12 @@ import {
     getSuppliers,
     updateSupplier
 } from "../../services/admin";
+import FieldError from "../../components/FieldError/FieldError";
+import { useFieldErrors } from "../../hooks/useFieldErrors";
+import { fieldError, summaryMessage } from "../../utils/validation";
+
+const DAYS_MESSAGE = "Escribe un número entero de días entre 0 y 365.";
+const isDeliveryDays = (value) => /^\d+$/.test(String(value).trim()) && Number(value) <= 365;
 
 const emptySupplier = { name: "", lastName: "", phone: "", deliveryDays: "7" };
 
@@ -20,6 +26,13 @@ function AdminCatalog() {
     const [notice, setNotice] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isBusy, setIsBusy] = useState(false);
+    const supplierErrors = useFieldErrors("supplier");
+    const sizeErrors = useFieldErrors("size");
+
+    const updateSupplier = (name, value) => {
+        setSupplierForm((current) => ({ ...current, [name]: value }));
+        supplierErrors.clear(name);
+    };
 
     const load = useCallback(async () => {
         setError("");
@@ -56,6 +69,16 @@ function AdminCatalog() {
 
     const handleCreateSupplier = (event) => {
         event.preventDefault();
+        setNotice("");
+        sizeErrors.reset();
+        const found = supplierErrors.validate({
+            name: fieldError(supplierForm.name),
+            deliveryDays: fieldError(supplierForm.deliveryDays, [isDeliveryDays, DAYS_MESSAGE])
+        }, event.currentTarget);
+        if (Object.keys(found).length) {
+            setError(summaryMessage(found));
+            return;
+        }
         run(async () => {
             await createSupplier({
                 name: supplierForm.name.trim(),
@@ -74,6 +97,13 @@ function AdminCatalog() {
 
     const handleCreateSize = (event) => {
         event.preventDefault();
+        setNotice("");
+        supplierErrors.reset();
+        const found = sizeErrors.validate({ sizeName: fieldError(sizeName) }, event.currentTarget);
+        if (Object.keys(found).length) {
+            setError(summaryMessage(found));
+            return;
+        }
         run(async () => {
             await createSize(sizeName.trim());
             setSizeName("");
@@ -114,23 +144,27 @@ function AdminCatalog() {
                             <RefreshCw size={14} />
                         </button>
                     </div>
-                    <form className="adm-card__body" onSubmit={handleCreateSupplier}>
+                    <form className="adm-card__body" onSubmit={handleCreateSupplier} noValidate>
                         <div className="adm-grid">
                             <label className="adm-field">Nombre o empresa
                                 <input className="adm-input" value={supplierForm.name} maxLength={100} required disabled={isBusy}
-                                    onChange={(event) => setSupplierForm({ ...supplierForm, name: event.target.value })} />
+                                    {...supplierErrors.fieldProps("name")}
+                                    onChange={(event) => updateSupplier("name", event.target.value)} />
+                                <FieldError id={supplierErrors.errorId("name")} message={supplierErrors.errors.name} />
                             </label>
                             <label className="adm-field">Apellido (opcional)
                                 <input className="adm-input" value={supplierForm.lastName} maxLength={50} disabled={isBusy}
-                                    onChange={(event) => setSupplierForm({ ...supplierForm, lastName: event.target.value })} />
+                                    onChange={(event) => updateSupplier("lastName", event.target.value)} />
                             </label>
                             <label className="adm-field">Teléfono (opcional)
                                 <input className="adm-input" value={supplierForm.phone} maxLength={30} disabled={isBusy}
-                                    onChange={(event) => setSupplierForm({ ...supplierForm, phone: event.target.value })} />
+                                    onChange={(event) => updateSupplier("phone", event.target.value)} />
                             </label>
                             <label className="adm-field">Días de entrega
-                                <input className="adm-input" type="number" min="0" max="365" value={supplierForm.deliveryDays} required disabled={isBusy}
-                                    onChange={(event) => setSupplierForm({ ...supplierForm, deliveryDays: event.target.value })} />
+                                <input className="adm-input" type="number" min="0" max="365" step="1" value={supplierForm.deliveryDays} required disabled={isBusy}
+                                    {...supplierErrors.fieldProps("deliveryDays")}
+                                    onChange={(event) => updateSupplier("deliveryDays", event.target.value)} />
+                                <FieldError id={supplierErrors.errorId("deliveryDays")} message={supplierErrors.errors.deliveryDays} />
                             </label>
                         </div>
                         <div className="adm-actions">
@@ -167,12 +201,14 @@ function AdminCatalog() {
                             <Ruler size={14} /> Cargar tallas 35–43
                         </button>
                     </div>
-                    <form className="adm-card__body" onSubmit={handleCreateSize}>
+                    <form className="adm-card__body" onSubmit={handleCreateSize} noValidate>
                         <div className="adm-toolbar">
                             <input className="adm-input" style={{ maxWidth: 220 }} placeholder="Ej.: 44 o XL" value={sizeName} maxLength={20} required disabled={isBusy}
-                                onChange={(event) => setSizeName(event.target.value)} />
+                                aria-label="Nombre de la talla" {...sizeErrors.fieldProps("sizeName")}
+                                onChange={(event) => { setSizeName(event.target.value); sizeErrors.clear("sizeName"); }} />
                             <button type="submit" className="adm-btn adm-btn--primary" disabled={isBusy}><Plus size={15} /> Añadir talla</button>
                         </div>
+                        <FieldError id={sizeErrors.errorId("sizeName")} message={sizeErrors.errors.sizeName} />
                     </form>
                     <div className="adm-table-wrap">
                         <table className="adm-table">

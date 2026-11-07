@@ -5,7 +5,9 @@
     .ins-layout { grid-template-columns: 210px minmax(0, 1fr); }
 }
 .ins-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
-.ins-period { width: 160px; }
+/* Doble clase: este archivo se carga antes que admin.css, cuyo .adm-input { width: 100% } ganaba. */
+.adm-input.ins-period { width: 170px; max-width: 100%; }
+.ins-filters .adm-input.ins-period { width: 100%; }
 .ins-card { margin-top: 18px; }
 .ins-card__body { padding: 4px 20px 18px; }
 .ins-grid { display: grid; gap: 18px; }

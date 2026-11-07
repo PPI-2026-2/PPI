@@ -2,9 +2,14 @@ import { Fragment, useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { RefreshCw, Search } from "lucide-react";
 
+import FieldError from "../../components/FieldError/FieldError";
 import Pagination from "../../components/Pagination/Pagination";
 import ProductImage from "../../components/ProductImage/ProductImage";
+import { useFieldErrors } from "../../hooks/useFieldErrors";
 import { adjustInventory, getInventory, setInventoryMinimum } from "../../services/admin";
+import { fieldError, isWholeNumber, summaryMessage } from "../../utils/validation";
+
+const isAdjustment = (value) => /^-?\d+$/.test(String(value).trim()) && Number(value) !== 0;
 
 const levelBadge = {
     OK: "adm-badge--active",
@@ -27,6 +32,12 @@ function AdminInventory() {
     const [notice, setNotice] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isBusy, setIsBusy] = useState(false);
+    const { errors, validate, clear, reset, errorId, fieldProps } = useFieldErrors("inventory");
+
+    const updateField = (name, value) => {
+        setEditForm((current) => ({ ...current, [name]: value }));
+        clear(name);
+    };
 
     const load = useCallback(async (currentFilters, page = 1) => {
         setError("");
@@ -69,12 +80,24 @@ function AdminInventory() {
         setNotice("");
         setEditing({ referenceId: item.referenceId, mode });
         setEditForm({ quantity: "", observation: "", minimum: String(item.minimum) });
+        reset();
     };
 
     const handleSubmit = async (event, item) => {
         event.preventDefault();
         setError("");
         setNotice("");
+        const found = validate(editing.mode === "adjust"
+            ? {
+                quantity: fieldError(editForm.quantity, [isAdjustment, "Escribe un número entero distinto de 0 (negativo para restar)."]),
+                observation: fieldError(editForm.observation)
+            }
+            : { minimum: fieldError(editForm.minimum, [isWholeNumber, "Escribe un número entero de 0 o más."]) },
+        event.currentTarget);
+        if (Object.keys(found).length) {
+            setError(summaryMessage(found));
+            return;
+        }
         setIsBusy(true);
         try {
             if (editing.mode === "adjust") {
@@ -174,23 +197,29 @@ function AdminInventory() {
                                         {isOpen && (
                                             <tr>
                                                 <td colSpan="8" className="adm-editor-cell">
-                                                    <form className="adm-inline-form" onSubmit={(event) => handleSubmit(event, item)}>
+                                                    <form className="adm-inline-form" onSubmit={(event) => handleSubmit(event, item)} noValidate>
                                                         {editing.mode === "adjust" ? (
                                                             <>
                                                                 <label className="adm-field">Cantidad (+ suma, − resta)
                                                                     <input className="adm-input" type="number" step="1" value={editForm.quantity} required disabled={isBusy}
-                                                                        onChange={(event) => setEditForm({ ...editForm, quantity: event.target.value })} />
+                                                                        {...fieldProps("quantity")}
+                                                                        onChange={(event) => updateField("quantity", event.target.value)} />
+                                                                    <FieldError id={errorId("quantity")} message={errors.quantity} />
                                                                 </label>
                                                                 <label className="adm-field adm-field--grow">Motivo del ajuste
                                                                     <input className="adm-input" value={editForm.observation} maxLength={500} required disabled={isBusy}
                                                                         placeholder="Ej.: conteo físico, merma, daño…"
-                                                                        onChange={(event) => setEditForm({ ...editForm, observation: event.target.value })} />
+                                                                        {...fieldProps("observation")}
+                                                                        onChange={(event) => updateField("observation", event.target.value)} />
+                                                                    <FieldError id={errorId("observation")} message={errors.observation} />
                                                                 </label>
                                                             </>
                                                         ) : (
                                                             <label className="adm-field">Stock mínimo
                                                                 <input className="adm-input" type="number" min="0" step="1" value={editForm.minimum} required disabled={isBusy}
-                                                                    onChange={(event) => setEditForm({ ...editForm, minimum: event.target.value })} />
+                                                                    {...fieldProps("minimum")}
+                                                                    onChange={(event) => updateField("minimum", event.target.value)} />
+                                                                <FieldError id={errorId("minimum")} message={errors.minimum} />
                                                                 <small>Se marca "Bajo" cuando lo disponible llega a este valor.</small>
                                                             </label>
                                                         )}

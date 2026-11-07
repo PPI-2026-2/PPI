@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CalendarDays, CheckCircle2, CircleAlert, Clock3, Mail, Minus, PackageCheck, Plus, ShieldCheck, UserRound, XCircle } from "lucide-react";
 import { Link, Navigate, useOutletContext, useParams } from "react-router-dom";
 
+import FieldError from "../../components/FieldError/FieldError";
+import { REQUIRED_MESSAGE } from "../../utils/validation";
+
 import {
     deliverEmployeeOrder,
     formatOrderDate,
@@ -42,6 +45,7 @@ function EmployeeOrderDetails() {
     const [order, setOrder] = useState(null);
     const [quantities, setQuantities] = useState({});
     const [reason, setReason] = useState("");
+    const [reasonMissing, setReasonMissing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
     const [loadError, setLoadError] = useState("");
@@ -130,6 +134,8 @@ function EmployeeOrderDetails() {
     const handleVerify = () => {
         if (derivedStatus === "INCOMPLETO" && !reason.trim()) {
             setFormMessage("Escribe el motivo por el que el pedido está incompleto.");
+            setReasonMissing(true);
+            document.getElementById("incomplete-reason")?.focus();
             return;
         }
         const lines = order.items.map((item) => ({ detailId: item.detailId, quantity: quantities[item.detailId] ?? 0 }));
@@ -185,11 +191,15 @@ function EmployeeOrderDetails() {
                         <textarea
                             id="incomplete-reason"
                             value={reason}
-                            onChange={(event) => { setReason(event.target.value); clearMessages(); }}
+                            onChange={(event) => { setReason(event.target.value); setReasonMissing(false); clearMessages(); }}
+                            aria-invalid={reasonMissing ? "true" : undefined}
+                            aria-describedby={reasonMissing ? "incomplete-reason-error" : undefined}
+                            required
                             maxLength={500}
                             rows={3}
                             placeholder="Describe qué producto falta o por qué no se puede completar el pedido."
                         />
+                        <FieldError id="incomplete-reason-error" message={reasonMissing ? REQUIRED_MESSAGE : ""} />
                         <span className="employee-order-detail__character-count">{reason.length}/500</span>
                     </div>
                 )}

@@ -91,6 +91,7 @@ stateDiagram-v2
 | Tema | Cómo se resuelve | Dónde |
 |---|---|---|
 | Contraseñas | Hash bcrypt, nunca en texto plano | `users.service.js` |
+| Contraseña nueva y correo | 8 caracteres o más con mayúscula, minúscula, número y símbolo; correo `texto@dominio.ext`. Se valida en el navegador y otra vez en el backend | `utils/credentials.js`, `frontend/src/utils/validation.js` |
 | Identidad | JWT HS256 de 30 minutos, con emisor y audiencia | `auth.service.js` |
 | Inactividad | El navegador registra la actividad, renueva el token y cierra a los 20 minutos | `frontend/src/services/session.js` |
 | Cuenta desactivada | Cada petición consulta `USUARIO.ESTADO`, así que pierde el acceso de inmediato | `auth.middleware.js` |

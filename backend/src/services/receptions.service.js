@@ -127,6 +127,88 @@ export function createReception({ referenceId, expected, received, rejected, rej
     });
 }
 
+// Suma lo aceptado al inventario de la referencia y deja el movimiento ENTRADA_RECEPCION.
+async function addAcceptedToInventory(connection, { referenceId, accepted, userId, receptionId }) {
+    if (accepted <= 0) return;
+    const updated = await connection.execute(
+        `UPDATE INVENTARIO
+            SET CANTIDAD_ACTUAL = CANTIDAD_ACTUAL + :accepted,
+                FECHA_ACTUALIZACION = SYSDATE
+          WHERE ID_REFERENCIA_FK = :referenceId`,
+        { accepted, referenceId }
+    );
+    if (updated.rowsAffected !== 1) {
+        throw new AppError("La referencia no tiene fila de inventario.", 409);
+    }
+    await connection.execute(
+        `INSERT INTO MOVIMIENTO_INVENTARIO (ID_REFERENCIA_FK, TIPO, CANTIDAD, ID_USUARIO_FK, ID_RECEPCION_FK, OBSERVACION)
+         VALUES (:referenceId, 'ENTRADA_RECEPCION', :quantity, :userId, :receptionId, :note)`,
+        { referenceId, quantity: accepted, userId, receptionId, note: `Recepción #${receptionId}` }
+    );
+}
+
+// Entrega de un producto en varias tallas, guardada con un solo clic: una fila de RECEPCION por talla,
+// ya CONFIRMADA, con lo aceptado sumado al inventario. Si una talla falla, no se guarda ninguna.
+// La cantidad esperada se iguala a la recibida (el proveedor entrega en físico lo que trae).
+export function receiveDelivery({ productId, lines, rejectionReason, observation }, userId) {
+    return withTransaction(async (connection) => {
+        const product = await connection.execute(
+            "SELECT ESTADO, ID_PROVEEDOR_FK FROM PRODUCTOS WHERE ID_PRODUCTO_PK = :productId",
+            { productId },
+            OBJECT
+        );
+        const productRow = product.rows[0];
+        if (!productRow) throw new AppError("El producto no existe.", 404);
+        if (productRow.ESTADO !== "ACTIVO") throw new AppError("El producto está inactivo.", 409);
+
+        const ids = [];
+        for (const line of lines) {
+            const reference = await connection.execute(
+                `SELECT RF.ESTADO, T.NOMBRE_TALLA
+                   FROM REFERENCIA_PRODUCTO RF
+                   JOIN TALLA T ON T.ID_TALLA_PK = RF.ID_TALLA_FK
+                  WHERE RF.ID_REFERENCIA_PK = :referenceId
+                    AND RF.ID_PRODUCTO_FK = :productId`,
+                { referenceId: line.referenceId, productId },
+                OBJECT
+            );
+            const referenceRow = reference.rows[0];
+            if (!referenceRow) throw new AppError("Una de las tallas no pertenece a este producto.", 404);
+            if (referenceRow.ESTADO !== "ACTIVO") {
+                throw new AppError(`La talla ${referenceRow.NOMBRE_TALLA} está inactiva para este producto.`, 409);
+            }
+
+            const accepted = line.received - line.rejected;
+            const inserted = await connection.execute(
+                `INSERT INTO RECEPCION (ID_PROVEEDOR_FK, ID_REFERENCIA_FK, ID_USUARIO_FK, CANTIDAD_ESPERADA,
+                                        CANTIDAD_RECIBIDA, CANTIDAD_ACEPTADA, CANTIDAD_RECHAZADA, MOTIVO_RECHAZO,
+                                        ESTADO, OBSERVACION)
+                 VALUES (:supplierId, :referenceId, :userId, :received, :received, :accepted, :rejected, :reason,
+                         'CONFIRMADA', :observation)
+                 RETURNING ID_RECEPCION_PK INTO :id`,
+                {
+                    supplierId: productRow.ID_PROVEEDOR_FK,
+                    referenceId: line.referenceId,
+                    userId,
+                    received: line.received,
+                    accepted,
+                    rejected: line.rejected,
+                    reason: line.rejected > 0 ? rejectionReason : null,
+                    observation,
+                    id: numberOut()
+                }
+            );
+            const receptionId = inserted.outBinds.id[0];
+            await addAcceptedToInventory(connection, { referenceId: line.referenceId, accepted, userId, receptionId });
+            ids.push(receptionId);
+        }
+
+        const receptions = [];
+        for (const id of ids) receptions.push(await fetchReception(connection, id));
+        return receptions;
+    });
+}
+
 // Confirmar = sumar lo aceptado al inventario + dejar el movimiento. Todo en una sola transacción.
 export function confirmReception(id, userId) {
     return withTransaction(async (connection) => {
@@ -144,30 +226,12 @@ export function confirmReception(id, userId) {
             throw new AppError(`La recepción ya está ${reception.ESTADO.toLowerCase()}; no se puede confirmar.`, 409);
         }
 
-        const accepted = reception.CANTIDAD_ACEPTADA;
-        if (accepted > 0) {
-            const updated = await connection.execute(
-                `UPDATE INVENTARIO
-                    SET CANTIDAD_ACTUAL = CANTIDAD_ACTUAL + :accepted,
-                        FECHA_ACTUALIZACION = SYSDATE
-                  WHERE ID_REFERENCIA_FK = :referenceId`,
-                { accepted, referenceId: reception.ID_REFERENCIA_FK }
-            );
-            if (updated.rowsAffected !== 1) {
-                throw new AppError("La referencia no tiene fila de inventario.", 409);
-            }
-            await connection.execute(
-                `INSERT INTO MOVIMIENTO_INVENTARIO (ID_REFERENCIA_FK, TIPO, CANTIDAD, ID_USUARIO_FK, ID_RECEPCION_FK, OBSERVACION)
-                 VALUES (:referenceId, 'ENTRADA_RECEPCION', :quantity, :userId, :receptionId, :note)`,
-                {
-                    referenceId: reception.ID_REFERENCIA_FK,
-                    quantity: accepted,
-                    userId,
-                    receptionId: id,
-                    note: `Recepción #${id}`
-                }
-            );
-        }
+        await addAcceptedToInventory(connection, {
+            referenceId: reception.ID_REFERENCIA_FK,
+            accepted: reception.CANTIDAD_ACEPTADA,
+            userId,
+            receptionId: id
+        });
 
         await connection.execute(
             "UPDATE RECEPCION SET ESTADO = 'CONFIRMADA' WHERE ID_RECEPCION_PK = :id",

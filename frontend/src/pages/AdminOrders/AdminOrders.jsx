@@ -2,7 +2,9 @@ import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Hourglass, RefreshCw, Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
+import FieldError from "../../components/FieldError/FieldError";
 import Pagination from "../../components/Pagination/Pagination";
+import { REQUIRED_MESSAGE } from "../../utils/validation";
 import {
     cancelIncompleteOrder,
     cancelUnclaimedOrder,
@@ -126,6 +128,7 @@ function AdminOrders() {
     const [searchParams, setSearchParams] = useSearchParams();
     const [confirmId, setConfirmId] = useState(null);
     const [closeReason, setCloseReason] = useState("");
+    const [closeReasonError, setCloseReasonError] = useState("");
     const [isBusy, setIsBusy] = useState(false);
     const [notice, setNotice] = useState("");
     const startUnclaimed = searchParams.get("vista") === "sin-reclamar";
@@ -204,12 +207,18 @@ function AdminOrders() {
 
     const openConfirm = (order) => {
         setCloseReason("");
+        setCloseReasonError("");
         setConfirmId(confirmId === order.id ? null : order.id);
     };
 
     const handleCloseIncomplete = async (order) => {
         setError("");
         setNotice("");
+        if (!closeReason.trim()) {
+            setCloseReasonError(REQUIRED_MESSAGE);
+            document.getElementById(`close-reason-${order.id}`)?.focus();
+            return;
+        }
         setIsBusy(true);
         try {
             await cancelIncompleteOrder(order.id, closeReason.trim());
@@ -321,9 +330,12 @@ function AdminOrders() {
                                             <td colSpan="7" className="adm-editor-cell">
                                                 <div className="adm-orders-confirm" role="alertdialog" aria-label={`Cerrar pedido ${order.code}`}>
                                                     <p><strong>¿Cerrar el pedido {order.code}?</strong> Quedará cancelado, lo que tenía separado volverá al stock disponible y el cliente verá el motivo en su campana de notificaciones. Esta acción no se puede deshacer.</p>
-                                                    <textarea className="adm-input" style={{ width: "100%" }} rows="2" maxLength="500" placeholder="Motivo del cierre (obligatorio)" aria-label="Motivo del cierre" value={closeReason} onChange={(event) => setCloseReason(event.target.value)} />
+                                                    <textarea id={`close-reason-${order.id}`} className="adm-input" style={{ width: "100%" }} rows="2" maxLength="500" placeholder="Motivo del cierre (obligatorio)" aria-label="Motivo del cierre" value={closeReason}
+                                                        aria-invalid={closeReasonError ? "true" : undefined} aria-describedby={closeReasonError ? `close-reason-${order.id}-error` : undefined}
+                                                        onChange={(event) => { setCloseReason(event.target.value); setCloseReasonError(""); }} />
+                                                    <FieldError id={`close-reason-${order.id}-error`} message={closeReasonError && "Escribe el motivo del cierre antes de confirmar."} />
                                                     <div>
-                                                        <button type="button" className="adm-btn adm-btn--sm adm-btn--danger" onClick={() => handleCloseIncomplete(order)} disabled={isBusy || !closeReason.trim()}>{isBusy ? "Cerrando…" : "Sí, cerrar y liberar stock"}</button>
+                                                        <button type="button" className="adm-btn adm-btn--sm adm-btn--danger" onClick={() => handleCloseIncomplete(order)} disabled={isBusy}>{isBusy ? "Cerrando…" : "Sí, cerrar y liberar stock"}</button>
                                                         <button type="button" className="adm-btn adm-btn--sm" onClick={() => setConfirmId(null)} disabled={isBusy}>Volver</button>
                                                     </div>
                                                 </div>
@@ -368,12 +380,18 @@ function AdminOrders() {
                                                         <h3 className="adm-order-detail__title">Historial</h3>
                                                         <ol className="adm-order-detail__history">
                                                             <li><span className="adm-badge adm-order-badge--pendiente">Pendiente</span><span>{formatOrderDateTime(detail.createdAt)} · Pedido realizado por {detail.customer}</span></li>
-                                                            {detail.history.map((entry, index) => (
-                                                                <li key={`${entry.at}-${index}`}>
-                                                                    <span className={`adm-badge adm-order-badge--${String(entry.status).toLowerCase()}`}>{ORDER_STATUS_LABEL[entry.status] ?? entry.status}</span>
-                                                                    <span>{formatOrderDateTime(entry.at)} · {entry.employee}{entry.observation ? ` — ${entry.observation}` : ""}</span>
-                                                                </li>
-                                                            ))}
+                                                            {detail.history.map((entry, index) => {
+                                                                // El motivo del incompleto actual ya se lee en el cuadro rojo: no se repite aquí.
+                                                                const repeatsReason = detail.status === "INCOMPLETO" && entry.status === "INCOMPLETO"
+                                                                    && entry.observation === detail.incompleteReason;
+                                                                const actor = entry.status === "CANCELADO" ? `Cancelado por ${entry.employee}` : `Pedido atendido por ${entry.employee}`;
+                                                                return (
+                                                                    <li key={`${entry.at}-${index}`}>
+                                                                        <span className={`adm-badge adm-order-badge--${String(entry.status).toLowerCase()}`}>{ORDER_STATUS_LABEL[entry.status] ?? entry.status}</span>
+                                                                        <span>{formatOrderDateTime(entry.at)} · {actor}{entry.observation && !repeatsReason ? ` — ${entry.observation}` : ""}</span>
+                                                                    </li>
+                                                                );
+                                                            })}
                                                         </ol>
                                                     </div>
                                                 )}

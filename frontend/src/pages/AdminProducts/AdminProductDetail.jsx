@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Plus, Save } from "lucide-react";
+import { ArrowLeft, Plus, Save, X } from "lucide-react";
 
+import FieldError from "../../components/FieldError/FieldError";
 import ProductImage from "../../components/ProductImage/ProductImage";
+import { useFieldErrors } from "../../hooks/useFieldErrors";
+import { fieldError, isPrice, PRICE_MESSAGE, summaryMessage } from "../../utils/validation";
 import {
     addProductSize,
     getProduct,
@@ -33,6 +36,13 @@ function AdminProductDetail() {
     const [notice, setNotice] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isBusy, setIsBusy] = useState(false);
+    const { errors, validate, clear, errorId, fieldProps } = useFieldErrors("product-edit");
+    const sizeErrors = useFieldErrors("product-size");
+
+    const updateField = (name, value) => {
+        setForm((current) => ({ ...current, [name]: value }));
+        clear(name);
+    };
 
     const load = useCallback(async () => {
         setError("");
@@ -72,6 +82,16 @@ function AdminProductDetail() {
 
     const handleSave = (event) => {
         event.preventDefault();
+        setNotice("");
+        const found = validate({
+            name: fieldError(form.name),
+            price: fieldError(form.price, [isPrice, PRICE_MESSAGE]),
+            supplierId: fieldError(form.supplierId)
+        }, event.currentTarget);
+        if (Object.keys(found).length) {
+            setError(summaryMessage(found));
+            return;
+        }
         run(async () => {
             const previousFile = product.imageFile;
             const updated = await updateProduct(product.id, {
@@ -105,6 +125,12 @@ function AdminProductDetail() {
 
     const handleAddSize = (event) => {
         event.preventDefault();
+        setNotice("");
+        const found = sizeErrors.validate({ newSizeId: newSizeId ? "" : "Elige la talla que quieres añadir." }, event.currentTarget);
+        if (Object.keys(found).length) {
+            setError(found.newSizeId);
+            return;
+        }
         run(async () => {
             setProduct(await addProductSize(product.id, Number(newSizeId)));
             setNewSizeId("");
@@ -147,30 +173,40 @@ function AdminProductDetail() {
                         {product.status === "ACTIVO" ? "Desactivar producto" : "Activar producto"}
                     </button>
                 </div>
-                <form className="adm-card__body" onSubmit={handleSave}>
+                <form className="adm-card__body" onSubmit={handleSave} noValidate>
                     <div className="adm-grid">
                         <label className="adm-field">Nombre
                             <input className="adm-input" value={form.name} maxLength={100} required disabled={isBusy}
-                                onChange={(event) => setForm({ ...form, name: event.target.value })} />
+                                {...fieldProps("name")}
+                                onChange={(event) => updateField("name", event.target.value)} />
+                            <FieldError id={errorId("name")} message={errors.name} />
                         </label>
                         <label className="adm-field">Precio (COP)
                             <input className="adm-input" type="number" min="0" step="0.01" value={form.price} required disabled={isBusy}
-                                onChange={(event) => setForm({ ...form, price: event.target.value })} />
+                                {...fieldProps("price")}
+                                onChange={(event) => updateField("price", event.target.value)} />
+                            <FieldError id={errorId("price")} message={errors.price} />
                         </label>
                         <label className="adm-field">Proveedor
                             <select className="adm-input" value={form.supplierId} required disabled={isBusy}
-                                onChange={(event) => setForm({ ...form, supplierId: event.target.value })}>
+                                {...fieldProps("supplierId")}
+                                onChange={(event) => updateField("supplierId", event.target.value)}>
                                 {supplierOptions.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}
                             </select>
+                            <FieldError id={errorId("supplierId")} message={errors.supplierId} />
                             <small>No se puede cambiar si el producto ya tiene recepciones.</small>
                         </label>
-                        <label className="adm-field adm-field--full">Descripción
+                        <label className="adm-field adm-field--full">Descripción (opcional)
                             <textarea className="adm-input" value={form.description} maxLength={500} disabled={isBusy}
-                                onChange={(event) => setForm({ ...form, description: event.target.value })} />
+                                onChange={(event) => updateField("description", event.target.value)} />
                         </label>
                     </div>
                     <div className="adm-actions">
                         <button type="submit" className="adm-btn adm-btn--primary" disabled={isBusy}><Save size={15} /> Guardar cambios</button>
+                        <Link to="/administrador/productos" className="adm-btn" aria-disabled={isBusy || undefined}
+                            onClick={(event) => { if (isBusy) event.preventDefault(); }}>
+                            <X size={15} /> Cancelar
+                        </Link>
                     </div>
                 </form>
             </section>
@@ -194,13 +230,15 @@ function AdminProductDetail() {
             <section className="adm-card">
                 <div className="adm-card__header">
                     <div><h2>Tallas e inventario</h2><p>Las existencias cambian al recibir mercancía, no desde aquí.</p></div>
-                    <form className="adm-toolbar" onSubmit={handleAddSize}>
+                    <form className="adm-toolbar" onSubmit={handleAddSize} noValidate>
                         <select className="adm-input" style={{ width: 150 }} value={newSizeId} required disabled={isBusy || freeSizes.length === 0}
-                            onChange={(event) => setNewSizeId(event.target.value)}>
+                            aria-label="Talla para añadir" {...sizeErrors.fieldProps("newSizeId")}
+                            onChange={(event) => { setNewSizeId(event.target.value); sizeErrors.clear("newSizeId"); }}>
                             <option value="">{freeSizes.length ? "Añadir talla…" : "Sin tallas libres"}</option>
                             {freeSizes.map((size) => <option key={size.id} value={size.id}>{size.name}</option>)}
                         </select>
-                        <button type="submit" className="adm-btn adm-btn--primary" disabled={isBusy || !newSizeId}><Plus size={15} /> Añadir</button>
+                        <button type="submit" className="adm-btn adm-btn--primary" disabled={isBusy || freeSizes.length === 0}><Plus size={15} /> Añadir</button>
+                        <FieldError id={sizeErrors.errorId("newSizeId")} message={sizeErrors.errors.newSizeId} />
                     </form>
                 </div>
                 <div className="adm-table-wrap">

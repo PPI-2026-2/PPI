@@ -33,7 +33,8 @@ erDiagram
 
 ```mermaid
 flowchart TD
-    R["RECEPCION registrada<br/>el stock no cambia"] -->|Confirmar| I["INVENTARIO.CANTIDAD_ACTUAL sube<br/>MOVIMIENTO: ENTRADA_RECEPCION"]
+    D["Entrega con varias tallas<br/>una RECEPCION CONFIRMADA por talla"] -->|Guardar| I["INVENTARIO.CANTIDAD_ACTUAL sube<br/>MOVIMIENTO: ENTRADA_RECEPCION"]
+    R["RECEPCION registrada<br/>flujo anterior, el stock no cambia"] -->|Confirmar| I
     P["PEDIDO PENDIENTE<br/>la tienda ya descuenta estas unidades"] -->|Verificar| V["INVENTARIO.CANTIDAD_RESERVADA sube<br/>PEDIDO COMPLETO o INCOMPLETO<br/>PROCESO_PEDIDO agrega un paso"]
     V -->|Entregar| E["ACTUAL y RESERVADA bajan<br/>MOVIMIENTO: SALIDA_PEDIDO<br/>PEDIDO RECLAMADO"]
     V -->|Cancelar o cerrar| C["RESERVADA baja<br/>PEDIDO CANCELADO"]

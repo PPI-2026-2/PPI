@@ -305,4 +305,11 @@ textarea.adm-input { min-height: 78px; padding: 9px 10px; resize: vertical; }
 .adm-field--grow { flex: 1 1 260px; }
 .adm-qty--in { color: var(--adm-success); font-weight: 700; }
 .adm-qty--out { color: var(--adm-danger); font-weight: 700; }
+.adm-filter-label { display: inline-flex; align-items: center; gap: 8px; color: var(--adm-text-2); font-size: 12px; font-weight: 600; white-space: nowrap; }
+/* Recepción: cantidades por talla */
+.adm-reception-lines { position: relative; border: 1px solid var(--adm-border); border-radius: 6px; }
+.adm-reception-lines td { vertical-align: top; }
+.adm-reception-lines .adm-input { width: 120px; }
+.adm-reception-lines small.field-error { max-width: 200px; white-space: normal; }
+.adm-reception-lines tfoot td { border-top: 1px solid var(--adm-border); background: var(--adm-surface-alt); }
 @media (max-width: 900px) { .adm-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

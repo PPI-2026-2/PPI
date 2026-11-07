@@ -93,6 +93,10 @@ export async function getReceptions({ status, productId, page, pageSize } = {}) 
 export async function createReception(reception) {
     return (await request("/recepciones", { method: "POST", body: reception })).reception;
 }
+// Entrega de un producto en varias tallas: se guarda confirmada y entra al inventario en un paso.
+export async function receiveDelivery(delivery) {
+    return (await request("/recepciones/entrega", { method: "POST", body: delivery })).receptions;
+}
 export async function confirmReception(id) {
     return (await request(`/recepciones/${id}/confirmar`, { method: "POST", body: {} })).reception;
 }

@@ -1,5 +1,6 @@
 import { authenticateUser, AuthError, createAccessToken } from "../services/auth.service.js";
 import { createUser, getActiveUser, UserServiceError } from "../services/users.service.js";
+import { EMAIL_MESSAGE, isStrongPassword, isValidEmail, PASSWORD_MESSAGE } from "../utils/credentials.js";
 
 function validateRegistration(body) {
     const { firstName, lastName, email, password } = body ?? {};
@@ -9,8 +10,11 @@ function validateRegistration(body) {
     if (firstName.trim().length > 50 || lastName.trim().length > 50 || email.trim().length > 100) {
         throw new UserServiceError("Uno o más campos superan el tamaño permitido.");
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-        throw new UserServiceError("Ingresa un correo electrónico válido.");
+    if (!isValidEmail(email)) {
+        throw new UserServiceError(EMAIL_MESSAGE);
+    }
+    if (!isStrongPassword(password)) {
+        throw new UserServiceError(PASSWORD_MESSAGE);
     }
     return { firstName, lastName, email, password };
 }

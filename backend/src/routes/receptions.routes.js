@@ -5,7 +5,8 @@ import {
     confirmReception,
     createReception,
     getReception,
-    getReceptions
+    getReceptions,
+    receiveDelivery
 } from "../controllers/receptions.controller.js";
 
 const receptionsRouter = Router();
@@ -13,6 +14,7 @@ const receptionsRouter = Router();
 receptionsRouter.get("/", getReceptions);
 receptionsRouter.get("/:id", getReception);
 receptionsRouter.post("/", createReception);
+receptionsRouter.post("/entrega", receiveDelivery);
 receptionsRouter.post("/:id/confirmar", confirmReception);
 receptionsRouter.post("/:id/anular", cancelReception);
 

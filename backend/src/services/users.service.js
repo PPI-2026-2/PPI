@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import oracledb from "oracledb";
 
 import { getOracleConnection } from "../config/oracle.js";
+import { EMAIL_MESSAGE, isStrongPassword, isValidEmail, PASSWORD_MESSAGE } from "../utils/credentials.js";
 
 const ALLOWED_ROLES = new Set(["USUARIO", "EMPLEADO", "ADMINISTRADOR"]);
 
@@ -21,8 +22,14 @@ export async function createUser({ firstName, lastName, email, password, role = 
     if (!ALLOWED_ROLES.has(normalizedRole)) {
         throw new UserServiceError("El rol solicitado no es válido.");
     }
-    if (password.length < 8 || passwordBytes > 72) {
-        throw new UserServiceError("La contraseña debe tener al menos 8 caracteres y no superar 72 bytes.");
+    if (!isValidEmail(email)) {
+        throw new UserServiceError(EMAIL_MESSAGE);
+    }
+    if (!isStrongPassword(password)) {
+        throw new UserServiceError(PASSWORD_MESSAGE);
+    }
+    if (passwordBytes > 72) {
+        throw new UserServiceError("La contraseña no puede superar 72 bytes.");
     }
 
     const passwordHash = await bcrypt.hash(password, 12);

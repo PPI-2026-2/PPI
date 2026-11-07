@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import FieldError from "../FieldError/FieldError";
+import { useFieldErrors } from "../../hooks/useFieldErrors";
 import { loginRequest, saveAuthSession } from "../../services/auth";
 import { clearSessionNotice, readSessionNotice } from "../../services/session";
+import { EMAIL_MESSAGE, fieldError, FORM_INCOMPLETE_MESSAGE, isValidEmail, summaryMessage } from "../../utils/validation";
 
 import "./LoginForm.css";
 
@@ -16,6 +19,7 @@ function LoginForm() {
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [notice] = useState(readSessionNotice);
+    const { errors, validate, clear, errorId, fieldProps } = useFieldErrors("login");
 
     useEffect(() => {
         clearSessionNotice();
@@ -29,11 +33,26 @@ function LoginForm() {
             ...previousData,
             [name]: value
         }));
+        clear(name);
     };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
         setError("");
+
+        // Solo se exige que los campos estén llenos y el correo bien escrito: las cuentas
+        // creadas antes de la regla de contraseña segura deben poder seguir entrando.
+        const found = validate({
+            email: fieldError(formData.email, [isValidEmail, EMAIL_MESSAGE]),
+            password: fieldError(formData.password)
+        }, event.currentTarget);
+        if (Object.keys(found).length) {
+            setError(summaryMessage(found) === FORM_INCOMPLETE_MESSAGE
+                ? "Completa el correo y la contraseña para iniciar sesión."
+                : "Revisa el correo electrónico.");
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
@@ -72,6 +91,7 @@ function LoginForm() {
         <form
             className="login-form"
             onSubmit={handleSubmit}
+            noValidate
         >
 
             {notice && !error && (
@@ -101,8 +121,11 @@ function LoginForm() {
                     disabled={isSubmitting}
                     placeholder="Ingresa tu correo electrónico"
                     autoComplete="email"
+                    maxLength={100}
                     required
+                    {...fieldProps("email")}
                 />
+                <FieldError id={errorId("email")} message={errors.email} />
 
             </div>
 
@@ -123,7 +146,9 @@ function LoginForm() {
                     placeholder="Ingresa tu contraseña"
                     autoComplete="current-password"
                     required
+                    {...fieldProps("password")}
                 />
+                <FieldError id={errorId("password")} message={errors.password} />
 
             </div>
 

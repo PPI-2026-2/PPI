@@ -50,6 +50,54 @@ export const createReception = asyncHandler(async (req, res) => {
     res.status(201).json({ reception });
 });
 
+const MAX_LINES = 100;
+
+// Entrega de un producto en varias tallas: se guarda y entra al inventario en un solo paso.
+export const receiveDelivery = asyncHandler(async (req, res) => {
+    const body = req.body ?? {};
+    const productId = requireId(body.productId, "El producto");
+    if (!Array.isArray(body.lines) || body.lines.length === 0) {
+        throw new AppError("Selecciona al menos una talla.");
+    }
+    if (body.lines.length > MAX_LINES) {
+        throw new AppError(`Una entrega admite máximo ${MAX_LINES} tallas.`);
+    }
+
+    const seen = new Set();
+    const lines = body.lines.map((line) => {
+        const referenceId = requireId(line?.referenceId, "La talla");
+        if (seen.has(referenceId)) throw new AppError("Una talla está repetida en la entrega.");
+        seen.add(referenceId);
+        const received = requireInt(line.received, "La cantidad recibida", { min: 1, max: MAX_UNITS });
+        const rejected = line.rejected === undefined || line.rejected === null || line.rejected === ""
+            ? 0
+            : requireInt(line.rejected, "La cantidad rechazada", { min: 0, max: MAX_UNITS });
+        if (rejected > received) {
+            throw new AppError("La cantidad rechazada no puede superar la cantidad recibida.");
+        }
+        return { referenceId, received, rejected };
+    });
+
+    const hasRejected = lines.some((line) => line.rejected > 0);
+    const rejectionReason = hasRejected
+        ? optionalString(body.rejectionReason, "El motivo del rechazo", { max: 200 })
+        : null;
+    if (hasRejected && !rejectionReason) {
+        throw new AppError("Indica el motivo del rechazo.");
+    }
+
+    const receptions = await service.receiveDelivery(
+        {
+            productId,
+            lines,
+            rejectionReason,
+            observation: optionalString(body.observation, "La observación", { max: 500 })
+        },
+        requireId(req.auth.sub, "El usuario")
+    );
+    res.status(201).json({ receptions });
+});
+
 export const confirmReception = asyncHandler(async (req, res) => {
     const id = requireId(req.params.id, "La recepción");
     res.status(200).json({ reception: await service.confirmReception(id, requireId(req.auth.sub, "El usuario")) });

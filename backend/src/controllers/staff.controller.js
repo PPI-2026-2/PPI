@@ -1,4 +1,5 @@
 import { createUser, listUsers, setStaffStatus, UserServiceError } from "../services/users.service.js";
+import { EMAIL_MESSAGE, isStrongPassword, isValidEmail, PASSWORD_MESSAGE } from "../utils/credentials.js";
 import { requireId, requireOneOf } from "../utils/validators.js";
 
 // Solo el personal interno se gestiona desde aquí.
@@ -38,8 +39,11 @@ export async function createStaffAccount(req, res, next) {
         if (firstName.trim().length > 50 || lastName.trim().length > 50 || email.trim().length > 100) {
             throw new UserServiceError("Uno o más campos superan el tamaño permitido.");
         }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-            throw new UserServiceError("Ingresa un correo electrónico válido.");
+        if (!isValidEmail(email)) {
+            throw new UserServiceError(EMAIL_MESSAGE);
+        }
+        if (!isStrongPassword(password)) {
+            throw new UserServiceError(PASSWORD_MESSAGE);
         }
 
         const normalizedRole = role.trim().toUpperCase();

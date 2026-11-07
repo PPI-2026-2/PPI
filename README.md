@@ -31,7 +31,7 @@ flowchart LR
     end
     subgraph A["ADMINISTRADOR"]
         A1["Alertas y<br/>recomendaciones"] --> A2{¿Actúa?}
-        A2 -- Sí --> A3["Recibe al proveedor<br/>y confirma la recepción"]
+        A2 -- Sí --> A3["Recibe al proveedor<br/>y guarda la entrega"]
         A2 -- No --> A4[La alerta sigue abierta]
     end
     C3 --> E1
@@ -46,8 +46,8 @@ flowchart LR
 1. Un producto se queda sin unidades libres: desaparece de la tienda y los clientes no pueden pedirlo.
 2. El sistema genera la alerta de **agotado** y **Reposición** recomienda cuánto pedir, a qué proveedor y por qué.
 3. El administrador decide. Si no actúa, la alerta sigue abierta; no se puede descartar, solo se cierra cuando el problema se resuelve.
-4. El proveedor entrega en físico. El administrador revisa la mercancía y registra la recepción: cantidad **esperada** (la que el proveedor se comprometió a entregar), **recibida** (la que entregó de verdad) y **rechazada** (con su motivo). La **aceptada** es recibida − rechazada.
-5. Al **confirmar** la recepción, lo aceptado entra al stock, la alerta y la recomendación se cierran solas y el producto vuelve a la tienda.
+4. El proveedor entrega en físico. En **Recepciones**, el administrador elige el producto, marca todas las tallas que llegaron y escribe por cada una la cantidad **recibida** y la **rechazada** (opcional, con un motivo común si hay rechazos). La **aceptada** es recibida − rechazada.
+5. Con un solo clic en **Guardar**, cada talla queda como una recepción confirmada: lo aceptado entra al stock, la alerta y la recomendación se cierran solas y el producto vuelve a la tienda. Si una talla falla, no se guarda ninguna.
 
 </details>
 
@@ -63,8 +63,11 @@ flowchart LR
 | Pedido incompleto | Refleja una diferencia entre el sistema y lo físico; el empleado lo confirma con un motivo. El cliente lo ve y decide: espera, y la campana le avisa cuando esté listo, o lo cancela |
 | Sesión | El token dura 30 minutos y se renueva con el uso; 20 minutos sin actividad cierran la sesión |
 | Cuenta desactivada | No puede entrar y pierde de inmediato su sesión abierta |
+| Campos obligatorios | Los que la base exige (`NOT NULL`) o la regla del negocio pide no se pueden dejar vacíos: al hacer clic en guardar, cada uno se marca en rojo con su aviso y el formulario no se envía. Los espacios en blanco cuentan como vacío |
+| Correo | Debe tener la forma `texto@dominio.ext`, sin espacios |
+| Contraseña nueva | Mínimo 8 caracteres, con al menos una mayúscula, una minúscula, un número y un símbolo (`* _ - $ #`…). Aplica al registro, a las cuentas de personal y al primer administrador; el inicio de sesión no la exige, para que las cuentas anteriores sigan entrando |
 
-Estas reglas están en el backend, no en la pantalla, salvo el conteo de inactividad, que lleva el navegador.
+Estas reglas están en el backend, no en la pantalla, salvo el conteo de inactividad, que lleva el navegador. Las validaciones de los formularios se repiten en el navegador para avisar antes de enviar.
 
 </details>
 
@@ -116,7 +119,7 @@ Los archivos `.env` no se suben al repositorio. Los clientes se registran desde 
 
 1. Crear el producto en **Productos**, con su proveedor y sus tallas. El sistema crea una referencia y una fila de inventario por cada talla.
 2. Descargar una imagen del zapato y guardarla en `frontend/public/images/products/`, en PNG y con el nombre del producto en minúsculas, sin tildes ni espacios: "Run Falcon" → `runfalcon.png`. Sin ese archivo, la tienda muestra "Sin foto".
-3. Registrar y confirmar una recepción. Sin stock, el producto no aparece en la tienda.
+3. Registrar en **Recepciones** la entrega con sus tallas y guardarla. Sin stock, el producto no aparece en la tienda.
 
 </details>
 

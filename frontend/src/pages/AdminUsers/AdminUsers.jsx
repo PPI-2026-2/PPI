@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw, UserPlus, Users } from "lucide-react";
 
+import FieldError from "../../components/FieldError/FieldError";
+import PasswordChecklist from "../../components/PasswordChecklist/PasswordChecklist";
+import { useFieldErrors } from "../../hooks/useFieldErrors";
 import { createStaffAccount, getSessionUser, getStaffAccounts, setStaffStatus } from "../../services/auth";
+import { EMAIL_MESSAGE, fieldError, isStrongPassword, isValidEmail, PASSWORD_MESSAGE, summaryMessage } from "../../utils/validation";
 
 import "./AdminUsers.css";
 
@@ -17,6 +21,12 @@ function AdminUsers() {
     const [confirmingId, setConfirmingId] = useState(null);
     const [busyId, setBusyId] = useState(null);
     const currentUserId = String(getSessionUser()?.id ?? "");
+    const { errors, validate, clear, reset, errorId, fieldProps } = useFieldErrors("staff");
+
+    const updateField = (name, value) => {
+        setForm((current) => ({ ...current, [name]: value }));
+        clear(name);
+    };
 
     const loadUsers = useCallback(async () => {
         setError("");
@@ -38,6 +48,17 @@ function AdminUsers() {
         event.preventDefault();
         setError("");
         setNotice("");
+        const found = validate({
+            firstName: fieldError(form.firstName),
+            lastName: fieldError(form.lastName),
+            email: fieldError(form.email, [isValidEmail, EMAIL_MESSAGE]),
+            password: fieldError(form.password, [isStrongPassword, PASSWORD_MESSAGE]),
+            role: fieldError(form.role)
+        }, event.currentTarget);
+        if (Object.keys(found).length) {
+            setError(summaryMessage(found));
+            return;
+        }
         setIsSubmitting(true);
         try {
             const user = await createStaffAccount({
@@ -48,6 +69,7 @@ function AdminUsers() {
             });
             setNotice(`Se creó la cuenta de ${user.name} con rol ${user.role}.`);
             setForm(emptyForm);
+            reset();
             await loadUsers();
         } catch (requestError) {
             setError(requestError.message);
@@ -103,12 +125,17 @@ function AdminUsers() {
                     <div className="admin-users-card__heading"><div className="admin-users-card__icon"><UserPlus size={19} /></div><div><h2>Crear cuenta</h2><p>La contraseña se almacena como hash y no se muestra en el listado.</p></div></div>
                     {error && <p className="admin-users-message admin-users-message--error" role="alert">{error}</p>}
                     {notice && <p className="admin-users-message admin-users-message--success" role="status">{notice}</p>}
-                    <form className="admin-users-form" onSubmit={handleSubmit}>
-                        <label>Nombre<input name="firstName" value={form.firstName} onChange={(event) => setForm({ ...form, firstName: event.target.value })} maxLength={50} autoComplete="given-name" required disabled={isSubmitting} /></label>
-                        <label>Apellido<input name="lastName" value={form.lastName} onChange={(event) => setForm({ ...form, lastName: event.target.value })} maxLength={50} autoComplete="family-name" required disabled={isSubmitting} /></label>
-                        <label>Correo electrónico<input name="email" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} maxLength={100} autoComplete="email" required disabled={isSubmitting} /></label>
-                        <label>Contraseña inicial<input name="password" type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} minLength={8} maxLength={72} autoComplete="new-password" required disabled={isSubmitting} /><small>8 caracteres mínimo; el backend genera un hash antes de guardarla.</small></label>
-                        <label>Rol<select name="role" value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })} disabled={isSubmitting}><option value="EMPLEADO">Empleado</option><option value="ADMINISTRADOR">Administrador</option></select></label>
+                    <form className="admin-users-form" onSubmit={handleSubmit} noValidate>
+                        <label>Nombre<input name="firstName" value={form.firstName} onChange={(event) => updateField("firstName", event.target.value)} maxLength={50} autoComplete="given-name" required disabled={isSubmitting} {...fieldProps("firstName")} /><FieldError id={errorId("firstName")} message={errors.firstName} /></label>
+                        <label>Apellido<input name="lastName" value={form.lastName} onChange={(event) => updateField("lastName", event.target.value)} maxLength={50} autoComplete="family-name" required disabled={isSubmitting} {...fieldProps("lastName")} /><FieldError id={errorId("lastName")} message={errors.lastName} /></label>
+                        <label>Correo electrónico<input name="email" type="email" value={form.email} onChange={(event) => updateField("email", event.target.value)} maxLength={100} autoComplete="email" placeholder="nombre@correo.com" required disabled={isSubmitting} {...fieldProps("email")} /><FieldError id={errorId("email")} message={errors.email} /></label>
+                        <label>Contraseña inicial<input name="password" type="password" value={form.password} onChange={(event) => updateField("password", event.target.value)} maxLength={72} autoComplete="new-password" required disabled={isSubmitting}
+                            aria-invalid={errors.password ? "true" : undefined}
+                            aria-describedby={errors.password ? `${errorId("password")} staff-password-rules` : "staff-password-rules"} />
+                            <FieldError id={errorId("password")} message={errors.password} />
+                            <PasswordChecklist id="staff-password-rules" password={form.password} />
+                            <small>El backend genera un hash antes de guardarla.</small></label>
+                        <label>Rol<select name="role" value={form.role} onChange={(event) => updateField("role", event.target.value)} required disabled={isSubmitting} {...fieldProps("role")}><option value="EMPLEADO">Empleado</option><option value="ADMINISTRADOR">Administrador</option></select><FieldError id={errorId("role")} message={errors.role} /></label>
                         <button type="submit" disabled={isSubmitting}><UserPlus size={16} />{isSubmitting ? "Creando…" : "Crear cuenta"}</button>
                     </form>
                 </section>

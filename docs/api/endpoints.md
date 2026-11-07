@@ -22,7 +22,7 @@
 | Método | Ruta | Acceso | Cuerpo | Función |
 |---|---|---|---|---|
 | POST | `/auth/login` | Público, 10 cada 15 min | `email`, `password` | Devuelve `accessToken` y `user` |
-| POST | `/auth/register` | Público, 5 por hora | `firstName`, `lastName`, `email`, `password` | Crea siempre un `USUARIO` e inicia su sesión |
+| POST | `/auth/register` | Público, 5 por hora | `firstName`, `lastName`, `email`, `password` | Crea siempre un `USUARIO` e inicia su sesión. Correo `texto@dominio.ext`; contraseña de 8 o más con mayúscula, minúscula, número y símbolo |
 | POST | `/auth/renovar` | Con sesión | | Entrega un token nuevo de 30 minutos |
 | GET | `/auth/me` | Con sesión | | Datos de quien inició sesión |
 
@@ -96,7 +96,7 @@ Parámetros opcionales: `?dias=7|30|90` y `?horizonte=30|60|90`. Ambos valen 90 
 | Método | Ruta | Cuerpo | Función |
 |---|---|---|---|
 | GET | `/admin/staff` | | Empleados y administradores |
-| POST | `/admin/staff` | `firstName`, `lastName`, `email`, `password`, `role` | Crea una cuenta. Hasta 20 por hora |
+| POST | `/admin/staff` | `firstName`, `lastName`, `email`, `password`, `role` | Crea una cuenta, con las mismas reglas de correo y contraseña del registro. Hasta 20 por hora |
 | PATCH | `/admin/staff/:id/estado` | `status: ACTIVO o INACTIVO` | Activa o desactiva. No aplica a la cuenta propia ni a clientes |
 
 </details>
@@ -128,7 +128,8 @@ Parámetros opcionales: `?dias=7|30|90` y `?horizonte=30|60|90`. Ambos valen 90 
 |---|---|---|---|
 | GET | `/admin/recepciones` | `?estado`, `productId`, `pagina`, `tamano` | Lista |
 | GET | `/admin/recepciones/:id` | | Detalle |
-| POST | `/admin/recepciones` | `referenceId`, `expected`, `received`, `rejected`, `rejectionReason`, `observation` | Registra; el stock no cambia todavía |
+| POST | `/admin/recepciones/entrega` | `productId`, `lines: [{ referenceId, received, rejected }]`, `rejectionReason`, `observation` | Lo que usa la pantalla. Guarda una recepción CONFIRMADA por talla, con la esperada igual a la recibida, y suma lo aceptado al stock con su movimiento. Todo o nada; el motivo es obligatorio si alguna talla tiene rechazadas |
+| POST | `/admin/recepciones` | `referenceId`, `expected`, `received`, `rejected`, `rejectionReason`, `observation` | Flujo anterior, una sola talla: registra sin tocar el stock |
 | POST | `/admin/recepciones/:id/confirmar` | | Suma lo aceptado al stock y deja el movimiento |
 | POST | `/admin/recepciones/:id/anular` | `observation` | Anula una recepción sin confirmar |
 | GET | `/admin/inventario` | `?q`, `productId`, `nivel=OK,BAJO o AGOTADO`, `pagina`, `tamano` | Stock por talla y resumen |

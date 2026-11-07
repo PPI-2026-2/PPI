@@ -2,9 +2,12 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, RefreshCw, Search, X } from "lucide-react";
 
+import FieldError from "../../components/FieldError/FieldError";
 import ProductImage from "../../components/ProductImage/ProductImage";
+import { useFieldErrors } from "../../hooks/useFieldErrors";
 import { createProduct, formatPrice, getProducts, getSizes, getSuppliers } from "../../services/admin";
 import { expectedImageFile } from "../../utils/productImage";
+import { fieldError, isPrice, PRICE_MESSAGE, summaryMessage } from "../../utils/validation";
 
 const emptyForm = { name: "", description: "", price: "", supplierId: "", sizeIds: [] };
 
@@ -19,6 +22,12 @@ function AdminProducts() {
     const [notice, setNotice] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const { errors, validate, clear, reset, errorId, fieldProps } = useFieldErrors("product");
+
+    const updateField = (name, value) => {
+        setForm((current) => ({ ...current, [name]: value }));
+        clear(name);
+    };
 
     const loadProducts = useCallback(async (currentFilters) => {
         setError("");
@@ -60,14 +69,21 @@ function AdminProducts() {
                 ? previous.sizeIds.filter((id) => id !== sizeId)
                 : [...previous.sizeIds, sizeId]
         }));
+        clear("sizeIds");
     };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
         setError("");
         setNotice("");
-        if (!form.sizeIds.length) {
-            setError("Selecciona al menos una talla para el producto.");
+        const found = validate({
+            name: fieldError(form.name),
+            price: fieldError(form.price, [isPrice, PRICE_MESSAGE]),
+            supplierId: fieldError(form.supplierId),
+            sizeIds: form.sizeIds.length ? "" : "Selecciona al menos una talla para el producto."
+        }, event.currentTarget);
+        if (Object.keys(found).length) {
+            setError(found.sizeIds && Object.keys(found).length === 1 ? found.sizeIds : summaryMessage(found));
             return;
         }
         setIsSubmitting(true);
@@ -84,6 +100,7 @@ function AdminProducts() {
                 `Guarda su imagen como ${product.imageFile} en frontend/public/images/products/.`
             );
             setForm(emptyForm);
+            reset();
             setShowForm(false);
             await loadProducts(filters);
         } catch (requestError) {
@@ -130,7 +147,7 @@ function AdminProducts() {
                 </div>
 
                 {showForm && (
-                    <form className="adm-card__body" onSubmit={handleSubmit} style={{ borderBottom: "1px solid var(--adm-border-soft)" }}>
+                    <form className="adm-card__body" onSubmit={handleSubmit} noValidate style={{ borderBottom: "1px solid var(--adm-border-soft)" }}>
                         {!canCreate && (
                             <p className="adm-message adm-message--info" style={{ margin: "0 0 16px" }}>
                                 Para crear un producto necesitas al menos un proveedor activo y una talla.{" "}
@@ -140,27 +157,33 @@ function AdminProducts() {
                         <div className="adm-grid">
                             <label className="adm-field">Nombre
                                 <input className="adm-input" value={form.name} maxLength={100} required disabled={isSubmitting}
-                                    onChange={(event) => setForm({ ...form, name: event.target.value })} />
+                                    {...fieldProps("name")}
+                                    onChange={(event) => updateField("name", event.target.value)} />
+                                <FieldError id={errorId("name")} message={errors.name} />
                                 <small>
                                     Imagen esperada: <strong>{imageHint || "—"}</strong> en frontend/public/images/products/
                                 </small>
                             </label>
                             <label className="adm-field">Precio (COP)
                                 <input className="adm-input" type="number" min="0" step="0.01" value={form.price} required disabled={isSubmitting}
-                                    onChange={(event) => setForm({ ...form, price: event.target.value })} />
+                                    {...fieldProps("price")}
+                                    onChange={(event) => updateField("price", event.target.value)} />
+                                <FieldError id={errorId("price")} message={errors.price} />
                             </label>
                             <label className="adm-field">Proveedor
                                 <select className="adm-input" value={form.supplierId} required disabled={isSubmitting}
-                                    onChange={(event) => setForm({ ...form, supplierId: event.target.value })}>
+                                    {...fieldProps("supplierId")}
+                                    onChange={(event) => updateField("supplierId", event.target.value)}>
                                     <option value="">Selecciona…</option>
                                     {suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}
                                 </select>
+                                <FieldError id={errorId("supplierId")} message={errors.supplierId} />
                             </label>
-                            <label className="adm-field adm-field--full">Descripción
+                            <label className="adm-field adm-field--full">Descripción (opcional)
                                 <textarea className="adm-input" value={form.description} maxLength={500} disabled={isSubmitting}
-                                    onChange={(event) => setForm({ ...form, description: event.target.value })} />
+                                    onChange={(event) => updateField("description", event.target.value)} />
                             </label>
-                            <div className="adm-field adm-field--full">
+                            <div className="adm-field adm-field--full" role="group" aria-label="Tallas del producto" aria-describedby={errors.sizeIds ? errorId("sizeIds") : undefined}>
                                 Tallas del producto
                                 <div className="adm-chip-list">
                                     {sizes.map((size) => (
@@ -170,6 +193,7 @@ function AdminProducts() {
                                         </label>
                                     ))}
                                 </div>
+                                <FieldError id={errorId("sizeIds")} message={errors.sizeIds} />
                             </div>
                         </div>
                         <div className="adm-actions">

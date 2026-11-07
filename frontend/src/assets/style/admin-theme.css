@@ -14,8 +14,13 @@
     --adm-td: #46545a;
     --adm-td-line: #edf0f2;
     --adm-empty: #849096;
+    color-scheme: light;
 }
 .admin-layout__navbar { background: var(--adm-navbar); }
+/* La lista desplegable la dibuja el navegador: sin fondo propio, sus opciones quedaban
+   del mismo tono que el texto cuando el tema del panel no coincide con el del sistema. */
+.admin-layout select option { background-color: var(--adm-input-bg); color: var(--adm-text); }
+.admin-layout select option:checked { background-color: var(--adm-primary-soft); color: var(--adm-text); }
 .admin-sidebar { background: var(--adm-sidebar); }
 .admin-sidebar__link:hover { background: var(--adm-hover); }
 .admin-sidebar__link--active { background: var(--adm-active); color: var(--adm-primary); }
