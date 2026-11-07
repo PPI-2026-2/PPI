@@ -46,7 +46,7 @@ flowchart LR
 1. Un producto se queda sin unidades libres: desaparece de la tienda y los clientes no pueden pedirlo.
 2. El sistema genera la alerta de **agotado** y **Reposición** recomienda cuánto pedir, a qué proveedor y por qué.
 3. El administrador decide. Si no actúa, la alerta sigue abierta; no se puede descartar, solo se cierra cuando el problema se resuelve.
-4. El proveedor entrega en físico. En **Recepciones**, el administrador elige el producto, marca todas las tallas que llegaron y escribe por cada una la cantidad **recibida** y la **rechazada** (opcional, con un motivo común si hay rechazos). La **aceptada** es recibida − rechazada.
+4. El proveedor entrega en físico. En **Recepciones**, el administrador elige el **proveedor** (obligatorio), luego uno de sus productos, marca todas las tallas que llegaron y escribe por cada una la cantidad **recibida** y la **rechazada** (opcional, con un motivo común si hay rechazos). La **aceptada** es recibida − rechazada.
 5. Con un solo clic en **Guardar**, cada talla queda como una recepción confirmada: lo aceptado entra al stock, la alerta y la recomendación se cierran solas y el producto vuelve a la tienda. Si una talla falla, no se guarda ninguna.
 
 </details>

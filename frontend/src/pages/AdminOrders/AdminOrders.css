@@ -8,10 +8,6 @@
 .adm-orders-confirm { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid #efd2cf; border-radius: 6px; background: rgba(156, 63, 55, .07); font-size: 12px; white-space: normal; }
 .adm-orders-confirm p { flex: 1 1 360px; margin: 0; }
 .adm-orders-confirm > div { display: flex; gap: 8px; }
-.adm-btn--danger { background: #9c3f37; border-color: #9c3f37; color: #fff; }
-.adm-btn--danger:hover:not(:disabled) { background: #843229; }
-.adm-btn--danger-soft { border-color: #e1b8b3; color: #9c3f37; }
-.adm-btn--danger-soft:hover:not(:disabled) { background: rgba(156, 63, 55, .08); }
 .adm-claimed { margin-top: 14px; padding: 14px 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px; }
 .adm-claimed__summary { display: grid; gap: 2px; }
 .adm-claimed__summary span { color: var(--adm-text-2); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }

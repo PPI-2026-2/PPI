@@ -15,12 +15,18 @@ export const createSupplier = asyncHandler(async (req, res) => {
     const supplier = await service.createSupplier({
         name: requireString(body.name, "El nombre", { max: 100 }),
         lastName: optionalString(body.lastName, "El apellido", { max: 50 }),
-        phone: optionalString(body.phone, "El teléfono", { max: 30 }),
+        // Obligatorio por regla del negocio (la columna admite NULL; no se cambia el esquema).
+        phone: requireString(body.phone, "El teléfono", { max: 30 }),
         deliveryDays: body.deliveryDays === undefined
             ? 7
             : requireInt(body.deliveryDays, "Los días de entrega", { min: 0, max: 365 })
     });
     res.status(201).json({ supplier });
+});
+
+export const deleteSupplier = asyncHandler(async (req, res) => {
+    const id = requireId(req.params.id, "El proveedor");
+    res.status(200).json({ supplier: await service.deleteSupplier(id) });
 });
 
 export const updateSupplier = asyncHandler(async (req, res) => {
@@ -29,7 +35,7 @@ export const updateSupplier = asyncHandler(async (req, res) => {
     const changes = {};
     if ("name" in body) changes.name = requireString(body.name, "El nombre", { max: 100 });
     if ("lastName" in body) changes.lastName = optionalString(body.lastName, "El apellido", { max: 50 });
-    if ("phone" in body) changes.phone = optionalString(body.phone, "El teléfono", { max: 30 });
+    if ("phone" in body) changes.phone = requireString(body.phone, "El teléfono", { max: 30 });
     if ("deliveryDays" in body) {
         changes.deliveryDays = requireInt(body.deliveryDays, "Los días de entrega", { min: 0, max: 365 });
     }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Plus, RefreshCw, Save, X } from "lucide-react";
 
+import { useConfirm } from "../../components/ConfirmDialog/ConfirmDialog";
 import FieldError from "../../components/FieldError/FieldError";
 import Pagination from "../../components/Pagination/Pagination";
 import ProductImage from "../../components/ProductImage/ProductImage";
@@ -11,13 +12,14 @@ import {
     formatDateTime,
     getInventory,
     getReceptions,
+    getSuppliers,
     receiveDelivery
 } from "../../services/admin";
 import { fieldError, isBlank, isWholeNumber, REQUIRED_MESSAGE, summaryMessage } from "../../utils/validation";
 
 const PAGE_SIZE = 100;
 // quantities: { [referenceId]: { received, rejected } } solo de las tallas elegidas, en el orden en que se eligieron.
-const emptyForm = { productId: "", selected: [], quantities: {}, rejectionReason: "", observation: "" };
+const emptyForm = { supplierId: "", productId: "", selected: [], quantities: {}, rejectionReason: "", observation: "" };
 
 const statusBadge = {
     REGISTRADA: "adm-badge--warn",
@@ -31,6 +33,7 @@ function AdminReceptions() {
     const [receptions, setReceptions] = useState([]);
     const [pagination, setPagination] = useState(null);
     const [references, setReferences] = useState([]);
+    const [suppliers, setSuppliers] = useState([]);
     const [statusFilter, setStatusFilter] = useState("");
     const [form, setForm] = useState(emptyForm);
     const [showForm, setShowForm] = useState(false);
@@ -39,6 +42,7 @@ function AdminReceptions() {
     const [isLoading, setIsLoading] = useState(true);
     const [isBusy, setIsBusy] = useState(false);
     const { errors, validate, clear, reset, errorId, fieldProps } = useFieldErrors("reception");
+    const [confirm, confirmDialog] = useConfirm();
 
     const loadReceptions = useCallback(async (status, page = 1) => {
         setError("");
@@ -54,8 +58,11 @@ function AdminReceptions() {
         }
     }, []);
 
-    const loadReferences = useCallback(() => getInventory()
-        .then(({ items }) => setReferences(items.filter((item) => item.productStatus === "ACTIVO" && item.referenceStatus === "ACTIVO")))
+    const loadReferences = useCallback(() => Promise.all([getInventory(), getSuppliers("ACTIVO")])
+        .then(([{ items }, supplierList]) => {
+            setReferences(items.filter((item) => item.productStatus === "ACTIVO" && item.referenceStatus === "ACTIVO"));
+            setSuppliers(supplierList);
+        })
         .catch((requestError) => setError(requestError.message)), []);
 
     useEffect(() => {
@@ -63,11 +70,15 @@ function AdminReceptions() {
         loadReferences();
     }, [loadReceptions, loadReferences]);
 
+    // Solo los productos del proveedor elegido (cada producto tiene un único proveedor).
     const products = useMemo(() => {
+        if (!form.supplierId) return [];
         const byId = new Map();
-        references.forEach((item) => byId.set(item.productId, item.productName));
+        references
+            .filter((item) => String(item.supplierId) === String(form.supplierId))
+            .forEach((item) => byId.set(item.productId, item.productName));
         return [...byId.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
-    }, [references]);
+    }, [references, form.supplierId]);
 
     const sizesOfProduct = useMemo(
         () => references.filter((item) => String(item.productId) === String(form.productId)),
@@ -109,8 +120,14 @@ function AdminReceptions() {
         setShowForm(false);
     };
 
+    // Cambiar de proveedor o de producto reinicia lo que depende de él (tallas y cantidades).
+    const selectSupplier = (supplierId) => {
+        setForm({ ...emptyForm, supplierId });
+        reset();
+    };
+
     const selectProduct = (productId) => {
-        setForm({ ...emptyForm, productId });
+        setForm((current) => ({ ...emptyForm, supplierId: current.supplierId, productId }));
         reset();
     };
 
@@ -146,6 +163,7 @@ function AdminReceptions() {
         setNotice("");
 
         const checks = {
+            supplierId: fieldError(form.supplierId),
             productId: fieldError(form.productId),
             sizes: form.productId && !lines.length ? "Selecciona al menos una talla de la entrega." : "",
             rejectionReason: hasRejected ? fieldError(form.rejectionReason) : ""
@@ -172,6 +190,7 @@ function AdminReceptions() {
         setIsBusy(true);
         try {
             const saved = await receiveDelivery({
+                supplierId: Number(form.supplierId),
                 productId: Number(form.productId),
                 lines: lines.map((line) => ({
                     referenceId: line.referenceId,
@@ -183,7 +202,8 @@ function AdminReceptions() {
             });
             const accepted = saved.reduce((sum, reception) => sum + reception.accepted, 0);
             const sizes = saved.map((reception) => reception.sizeName).join(", ");
-            setNotice(`Entrega de ${product?.name ?? "el producto"} guardada: ${accepted} unidad(es) aceptadas ya están en inventario (tallas ${sizes}).`);
+            const supplier = suppliers.find((item) => String(item.id) === String(form.supplierId));
+            setNotice(`Entrega de ${product?.name ?? "el producto"} (proveedor ${supplier?.name ?? saved[0]?.supplierName}) guardada: ${accepted} unidad(es) aceptadas ya están en inventario (tallas ${sizes}).`);
             closeForm();
             await Promise.all([loadReceptions(statusFilter, 1), loadReferences()]);
         } catch (requestError) {
@@ -194,7 +214,12 @@ function AdminReceptions() {
     };
 
     const handleConfirm = async (reception) => {
-        if (!window.confirm(`¿Confirmar la recepción #${reception.id}? Se sumarán ${reception.accepted} unidad(es) al inventario.`)) return;
+        const accepted = await confirm({
+            title: `Confirmar la recepción #${reception.id}`,
+            message: <>Se sumarán <strong>{reception.accepted} unidad(es)</strong> de {reception.productName} talla {reception.sizeName} al inventario y quedará el movimiento.</>,
+            confirmLabel: "Sí, confirmar"
+        });
+        if (!accepted) return;
         setError("");
         setNotice("");
         setIsBusy(true);
@@ -210,7 +235,13 @@ function AdminReceptions() {
     };
 
     const handleCancel = async (reception) => {
-        const reason = window.prompt(`Motivo para anular la recepción #${reception.id} (opcional):`);
+        const reason = await confirm({
+            title: `Anular la recepción #${reception.id}`,
+            message: <>La recepción de {reception.productName} talla {reception.sizeName} quedará anulada. El inventario no cambia.</>,
+            confirmLabel: "Sí, anular",
+            tone: "danger",
+            input: { label: "Motivo (opcional)", maxLength: 200, placeholder: "Ej.: el proveedor no entregó" }
+        });
         if (reason === null) return;
         setError("");
         setNotice("");
@@ -231,11 +262,12 @@ function AdminReceptions() {
             <header className="adm-heading">
                 <span>INVENTARIO / RECEPCIONES</span>
                 <h1>Recepción de mercancía</h1>
-                <p>Registra lo que entrega el proveedor: elige el producto, marca las tallas que llegaron y escribe por cada una lo recibido y lo rechazado. Al guardar, lo aceptado entra al inventario y queda en los movimientos.</p>
+                <p>Registra lo que entrega el proveedor: elige el proveedor y uno de sus productos, marca las tallas que llegaron y escribe por cada una lo recibido y lo rechazado. Al guardar, lo aceptado entra al inventario y queda en los movimientos.</p>
             </header>
 
             {error && <p className="adm-message adm-message--error" role="alert">{error}</p>}
             {notice && <p className="adm-message adm-message--success" role="status">{notice}</p>}
+            {confirmDialog}
 
             <section className="adm-card">
                 <div className="adm-card__header">
@@ -259,21 +291,36 @@ function AdminReceptions() {
 
                 {showForm && (
                     <form className="adm-card__body" onSubmit={handleSubmit} noValidate style={{ borderBottom: "1px solid var(--adm-border-soft)" }}>
-                        {products.length === 0 && (
+                        {suppliers.length === 0 && (
                             <p className="adm-message adm-message--info" style={{ margin: "0 0 16px" }}>
-                                No hay productos activos con tallas activas. Crea productos primero en Catálogo.
+                                No hay proveedores activos. Créalos o actívalos primero en Proveedores y tallas.
+                            </p>
+                        )}
+                        {form.supplierId && products.length === 0 && (
+                            <p className="adm-message adm-message--info" style={{ margin: "0 0 16px" }}>
+                                Este proveedor no tiene productos activos con tallas activas. Asígnale productos en Productos.
                             </p>
                         )}
                         <div className="adm-grid">
+                            <label className="adm-field">Proveedor
+                                <select className="adm-input" value={form.supplierId} required disabled={isBusy}
+                                    {...fieldProps("supplierId")}
+                                    onChange={(event) => selectSupplier(event.target.value)}>
+                                    <option value="">Selecciona…</option>
+                                    {suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}
+                                </select>
+                                <FieldError id={errorId("supplierId")} message={errors.supplierId} />
+                                <small>La distribuidora que entrega la mercancía.</small>
+                            </label>
                             <label className="adm-field">Producto
-                                <select className="adm-input" value={form.productId} required disabled={isBusy}
+                                <select className="adm-input" value={form.productId} required disabled={isBusy || !form.supplierId}
                                     {...fieldProps("productId")}
                                     onChange={(event) => selectProduct(event.target.value)}>
-                                    <option value="">Selecciona…</option>
+                                    <option value="">{form.supplierId ? "Selecciona…" : "Elige primero el proveedor"}</option>
                                     {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
                                 </select>
                                 <FieldError id={errorId("productId")} message={errors.productId} />
-                                <small>El proveedor es el asignado al producto.</small>
+                                <small>Solo los productos de ese proveedor.</small>
                             </label>
 
                             <div className="adm-field adm-field--full" role="group" aria-label="Tallas que llegaron"

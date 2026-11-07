@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CalendarDays, CheckCircle2, CircleAlert, Clock3, Mail, Minus, PackageCheck, Plus, ShieldCheck, UserRound, XCircle } from "lucide-react";
 import { Link, Navigate, useOutletContext, useParams } from "react-router-dom";
 
+import { useConfirm } from "../../components/ConfirmDialog/ConfirmDialog";
 import FieldError from "../../components/FieldError/FieldError";
 import { REQUIRED_MESSAGE } from "../../utils/validation";
 
@@ -53,6 +54,7 @@ function EmployeeOrderDetails() {
     const [formMessage, setFormMessage] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
     const [notificationMessage, setNotificationMessage] = useState("");
+    const [confirm, confirmDialog] = useConfirm();
 
     const applyOrder = useCallback((next) => {
         setOrder(next);
@@ -142,13 +144,19 @@ function EmployeeOrderDetails() {
         run(() => verifyEmployeeOrder(order.id, lines, derivedStatus === "INCOMPLETO" ? reason.trim() : ""), "Pedido verificado y unidades reservadas en inventario.");
     };
 
-    const handleDeliver = () => {
-        if (!window.confirm(`¿Marcar el pedido ${order.code} como reclamado? Se descontará el inventario.`)) return;
+    const handleDeliver = async () => {
+        const accepted = await confirm({
+            title: `Marcar el pedido ${order.code} como reclamado`,
+            message: <>Confirma que <strong>{order.customer}</strong> recogió su pedido. Se descontarán del inventario las unidades separadas.</>,
+            confirmLabel: "Sí, marcar como reclamado"
+        });
+        if (!accepted) return;
         run(() => deliverEmployeeOrder(order.id), "Pedido reclamado e inventario actualizado.");
     };
 
     return (
         <div className="employee-dashboard employee-order-detail-page">
+            {confirmDialog}
             <div className="employee-dashboard__header">
                 <div>
                     <Link className="employee-order-detail__back" to="/empleado"><ArrowLeft size={16} /> Volver a pedidos</Link>

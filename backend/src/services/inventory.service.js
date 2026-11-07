@@ -4,7 +4,7 @@ import { productImageUrl } from "../utils/product-image.js";
 
 const INVENTORY_SELECT = `
 SELECT RF.ID_REFERENCIA_PK, RF.ESTADO AS REF_ESTADO,
-       P.ID_PRODUCTO_PK, P.NOMBRE_PRODUCTO, P.ESTADO AS PROD_ESTADO,
+       P.ID_PRODUCTO_PK, P.NOMBRE_PRODUCTO, P.ESTADO AS PROD_ESTADO, P.ID_PROVEEDOR_FK,
        T.NOMBRE_TALLA,
        I.CANTIDAD_ACTUAL, I.CANTIDAD_RESERVADA, I.STOCK_MINIMO, I.FECHA_ACTUALIZACION
   FROM INVENTARIO I
@@ -28,6 +28,7 @@ function toInventoryRow(row) {
         productName: row.NOMBRE_PRODUCTO,
         imageUrl: productImageUrl(row.NOMBRE_PRODUCTO),
         productStatus: row.PROD_ESTADO,
+        supplierId: row.ID_PROVEEDOR_FK,
         sizeName: row.NOMBRE_TALLA,
         referenceStatus: row.REF_ESTADO,
         onHand: row.CANTIDAD_ACTUAL,

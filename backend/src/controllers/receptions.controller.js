@@ -55,6 +55,10 @@ const MAX_LINES = 100;
 // Entrega de un producto en varias tallas: se guarda y entra al inventario en un solo paso.
 export const receiveDelivery = asyncHandler(async (req, res) => {
     const body = req.body ?? {};
+    if (body.supplierId === undefined || body.supplierId === null || body.supplierId === "") {
+        throw new AppError("El proveedor es obligatorio.");
+    }
+    const supplierId = requireId(body.supplierId, "El proveedor");
     const productId = requireId(body.productId, "El producto");
     if (!Array.isArray(body.lines) || body.lines.length === 0) {
         throw new AppError("Selecciona al menos una talla.");
@@ -88,6 +92,7 @@ export const receiveDelivery = asyncHandler(async (req, res) => {
 
     const receptions = await service.receiveDelivery(
         {
+            supplierId,
             productId,
             lines,
             rejectionReason,

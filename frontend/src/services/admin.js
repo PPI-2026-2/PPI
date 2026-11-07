@@ -41,6 +41,10 @@ export async function createSupplier(supplier) {
 export async function updateSupplier(id, changes) {
     return (await request(`/proveedores/${id}`, { method: "PATCH", body: changes })).supplier;
 }
+// Solo si el proveedor no tiene productos ni recepciones; si no, responde 409.
+export async function deleteSupplier(id) {
+    return (await request(`/proveedores/${id}/eliminar`, { method: "POST", body: {} })).supplier;
+}
 
 // Tallas
 export async function getSizes() {

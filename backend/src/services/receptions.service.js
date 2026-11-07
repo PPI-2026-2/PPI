@@ -150,16 +150,29 @@ async function addAcceptedToInventory(connection, { referenceId, accepted, userI
 // Entrega de un producto en varias tallas, guardada con un solo clic: una fila de RECEPCION por talla,
 // ya CONFIRMADA, con lo aceptado sumado al inventario. Si una talla falla, no se guarda ninguna.
 // La cantidad esperada se iguala a la recibida (el proveedor entrega en físico lo que trae).
-export function receiveDelivery({ productId, lines, rejectionReason, observation }, userId) {
+// El proveedor lo elige el administrador (obligatorio) y debe ser el asignado al producto.
+export function receiveDelivery({ supplierId, productId, lines, rejectionReason, observation }, userId) {
     return withTransaction(async (connection) => {
+        const supplier = await connection.execute(
+            "SELECT NOMBRE_PROVEEDOR, ESTADO FROM PROVEEDOR WHERE ID_PROVEEDOR_PK = :supplierId",
+            { supplierId },
+            OBJECT
+        );
+        const supplierRow = supplier.rows[0];
+        if (!supplierRow) throw new AppError("El proveedor no existe.", 404);
+        if (supplierRow.ESTADO !== "ACTIVO") throw new AppError(`El proveedor ${supplierRow.NOMBRE_PROVEEDOR} está inactivo.`, 409);
+
         const product = await connection.execute(
-            "SELECT ESTADO, ID_PROVEEDOR_FK FROM PRODUCTOS WHERE ID_PRODUCTO_PK = :productId",
+            "SELECT NOMBRE_PRODUCTO, ESTADO, ID_PROVEEDOR_FK FROM PRODUCTOS WHERE ID_PRODUCTO_PK = :productId",
             { productId },
             OBJECT
         );
         const productRow = product.rows[0];
         if (!productRow) throw new AppError("El producto no existe.", 404);
         if (productRow.ESTADO !== "ACTIVO") throw new AppError("El producto está inactivo.", 409);
+        if (productRow.ID_PROVEEDOR_FK !== supplierId) {
+            throw new AppError(`${productRow.NOMBRE_PRODUCTO} no pertenece al proveedor ${supplierRow.NOMBRE_PROVEEDOR}.`, 409);
+        }
 
         const ids = [];
         for (const line of lines) {
@@ -187,7 +200,7 @@ export function receiveDelivery({ productId, lines, rejectionReason, observation
                          'CONFIRMADA', :observation)
                  RETURNING ID_RECEPCION_PK INTO :id`,
                 {
-                    supplierId: productRow.ID_PROVEEDOR_FK,
+                    supplierId,
                     referenceId: line.referenceId,
                     userId,
                     received: line.received,

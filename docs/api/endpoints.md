@@ -107,8 +107,9 @@ Parámetros opcionales: `?dias=7|30|90` y `?horizonte=30|60|90`. Ambos valen 90 
 | Método | Ruta | Cuerpo o parámetros | Función |
 |---|---|---|---|
 | GET | `/admin/proveedores` | `?estado` | Lista |
-| POST | `/admin/proveedores` | `name`, `lastName`, `phone`, `deliveryDays` | Crea |
-| PATCH | `/admin/proveedores/:id` | Los mismos y `status` | Edita |
+| POST | `/admin/proveedores` | `name`, `lastName`, `phone`, `deliveryDays` | Crea. `name` y `phone` son obligatorios; `lastName` es opcional |
+| PATCH | `/admin/proveedores/:id` | Los mismos y `status` | Edita o activa y desactiva. Si se envía `phone`, no puede ir vacío |
+| POST | `/admin/proveedores/:id/eliminar` | | Elimina, solo si no tiene productos ni recepciones (409 si los tiene; en ese caso se desactiva) |
 | GET | `/admin/tallas` | | Lista |
 | POST | `/admin/tallas` | `name` | Crea |
 | GET | `/admin/productos` | `?estado`, `q` | Lista |
@@ -128,7 +129,7 @@ Parámetros opcionales: `?dias=7|30|90` y `?horizonte=30|60|90`. Ambos valen 90 
 |---|---|---|---|
 | GET | `/admin/recepciones` | `?estado`, `productId`, `pagina`, `tamano` | Lista |
 | GET | `/admin/recepciones/:id` | | Detalle |
-| POST | `/admin/recepciones/entrega` | `productId`, `lines: [{ referenceId, received, rejected }]`, `rejectionReason`, `observation` | Lo que usa la pantalla. Guarda una recepción CONFIRMADA por talla, con la esperada igual a la recibida, y suma lo aceptado al stock con su movimiento. Todo o nada; el motivo es obligatorio si alguna talla tiene rechazadas |
+| POST | `/admin/recepciones/entrega` | `supplierId`, `productId`, `lines: [{ referenceId, received, rejected }]`, `rejectionReason`, `observation` | Lo que usa la pantalla. El proveedor es obligatorio, debe estar activo y ser el asignado al producto (409 si no). Guarda una recepción CONFIRMADA por talla con ese proveedor, con la esperada igual a la recibida, y suma lo aceptado al stock con su movimiento. Todo o nada; el motivo es obligatorio si alguna talla tiene rechazadas |
 | POST | `/admin/recepciones` | `referenceId`, `expected`, `received`, `rejected`, `rejectionReason`, `observation` | Flujo anterior, una sola talla: registra sin tocar el stock |
 | POST | `/admin/recepciones/:id/confirmar` | | Suma lo aceptado al stock y deja el movimiento |
 | POST | `/admin/recepciones/:id/anular` | `observation` | Anula una recepción sin confirmar |

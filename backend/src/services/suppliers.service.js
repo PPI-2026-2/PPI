@@ -59,6 +59,33 @@ export function createSupplier({ name, lastName, phone, deliveryDays }) {
     });
 }
 
+// Solo se elimina un proveedor sin productos ni recepciones (PRODUCTOS y RECEPCION lo referencian);
+// si ya se usó, se desactiva para conservar el historial.
+export function deleteSupplier(id) {
+    return withTransaction(async (connection) => {
+        const found = await connection.execute(
+            `SELECT NOMBRE_PROVEEDOR,
+                    (SELECT COUNT(*) FROM PRODUCTOS WHERE ID_PROVEEDOR_FK = :id) AS PRODUCTOS,
+                    (SELECT COUNT(*) FROM RECEPCION WHERE ID_PROVEEDOR_FK = :id) AS RECEPCIONES
+               FROM PROVEEDOR
+              WHERE ID_PROVEEDOR_PK = :id
+                FOR UPDATE`,
+            { id },
+            OBJECT
+        );
+        const row = found.rows[0];
+        if (!row) throw new AppError("El proveedor no existe.", 404);
+        if (row.PRODUCTOS > 0 || row.RECEPCIONES > 0) {
+            throw new AppError(
+                `No se puede eliminar a ${row.NOMBRE_PROVEEDOR}: tiene ${row.PRODUCTOS} producto(s) y ${row.RECEPCIONES} recepción(es) registradas. Desactívalo para que no se use más.`,
+                409
+            );
+        }
+        await connection.execute("DELETE FROM PROVEEDOR WHERE ID_PROVEEDOR_PK = :id", { id });
+        return { id, name: row.NOMBRE_PROVEEDOR };
+    });
+}
+
 export function updateSupplier(id, changes) {
     return withTransaction(async (connection) => {
         const { clause, binds } = buildSetClause(changes, SUPPLIER_COLUMNS);

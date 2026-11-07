@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
-import { Plus, RefreshCw, Ruler } from "lucide-react";
+import { Pencil, Plus, RefreshCw, Ruler, Save, Trash2, X } from "lucide-react";
 
 import {
     createSize,
     createSupplier,
+    deleteSupplier,
     getSizes,
     getSuppliers,
     updateSupplier
 } from "../../services/admin";
+import { useConfirm } from "../../components/ConfirmDialog/ConfirmDialog";
 import FieldError from "../../components/FieldError/FieldError";
 import { useFieldErrors } from "../../hooks/useFieldErrors";
 import { fieldError, summaryMessage } from "../../utils/validation";
@@ -26,12 +28,35 @@ function AdminCatalog() {
     const [notice, setNotice] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isBusy, setIsBusy] = useState(false);
+    const [editingId, setEditingId] = useState(null);
+    const [confirm, confirmDialog] = useConfirm();
     const supplierErrors = useFieldErrors("supplier");
     const sizeErrors = useFieldErrors("size");
 
-    const updateSupplier = (name, value) => {
+    // Nombre distinto de updateSupplier (servicio): si se llamaran igual, este tapaba la llamada a la API.
+    const updateSupplierField = (name, value) => {
         setSupplierForm((current) => ({ ...current, [name]: value }));
         supplierErrors.clear(name);
+    };
+
+    const startEdit = (supplier) => {
+        setError("");
+        setNotice("");
+        supplierErrors.reset();
+        setEditingId(supplier.id);
+        setSupplierForm({
+            name: supplier.name ?? "",
+            lastName: supplier.lastName ?? "",
+            phone: supplier.phone ?? "",
+            deliveryDays: String(supplier.deliveryDays ?? 7)
+        });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    const cancelEdit = () => {
+        setEditingId(null);
+        setSupplierForm(emptySupplier);
+        supplierErrors.reset();
     };
 
     const load = useCallback(async () => {
@@ -73,26 +98,48 @@ function AdminCatalog() {
         sizeErrors.reset();
         const found = supplierErrors.validate({
             name: fieldError(supplierForm.name),
+            phone: fieldError(supplierForm.phone),
             deliveryDays: fieldError(supplierForm.deliveryDays, [isDeliveryDays, DAYS_MESSAGE])
         }, event.currentTarget);
         if (Object.keys(found).length) {
             setError(summaryMessage(found));
             return;
         }
+        const data = {
+            name: supplierForm.name.trim(),
+            lastName: supplierForm.lastName.trim(),
+            phone: supplierForm.phone.trim(),
+            deliveryDays: Number(supplierForm.deliveryDays)
+        };
+        const isEditing = editingId !== null;
         run(async () => {
-            await createSupplier({
-                name: supplierForm.name.trim(),
-                lastName: supplierForm.lastName.trim(),
-                phone: supplierForm.phone.trim(),
-                deliveryDays: Number(supplierForm.deliveryDays)
-            });
+            if (isEditing) await updateSupplier(editingId, data);
+            else await createSupplier(data);
+            setEditingId(null);
             setSupplierForm(emptySupplier);
-        }, "Proveedor creado.");
+        }, isEditing ? `Proveedor ${data.name} actualizado.` : "Proveedor creado.");
     };
 
     const handleToggleSupplier = (supplier) => {
         const status = supplier.status === "ACTIVO" ? "INACTIVO" : "ACTIVO";
-        run(() => updateSupplier(supplier.id, { status }), `Proveedor ${status === "ACTIVO" ? "activado" : "desactivado"}.`);
+        run(() => updateSupplier(supplier.id, { status }),
+            status === "ACTIVO"
+                ? `Proveedor ${supplier.name} activado.`
+                : `Proveedor ${supplier.name} desactivado: ya no aparece para asignar a productos nuevos.`);
+    };
+
+    const handleDeleteSupplier = async (supplier) => {
+        const accepted = await confirm({
+            title: "Eliminar proveedor",
+            message: <>¿Eliminar a <strong>{supplier.name}</strong>? Esta acción no se puede deshacer. Si tiene productos o recepciones no se eliminará; en ese caso, desactívalo.</>,
+            confirmLabel: "Sí, eliminar",
+            tone: "danger"
+        });
+        if (!accepted) return;
+        run(async () => {
+            await deleteSupplier(supplier.id);
+            if (editingId === supplier.id) cancelEdit();
+        }, `Proveedor ${supplier.name} eliminado.`);
     };
 
     const handleCreateSize = (event) => {
@@ -135,6 +182,7 @@ function AdminCatalog() {
 
             {error && <p className="adm-message adm-message--error" role="alert">{error}</p>}
             {notice && <p className="adm-message adm-message--success" role="status">{notice}</p>}
+            {confirmDialog}
 
             <div className="adm-two-cols">
                 <section className="adm-card">
@@ -145,30 +193,44 @@ function AdminCatalog() {
                         </button>
                     </div>
                     <form className="adm-card__body" onSubmit={handleCreateSupplier} noValidate>
+                        {editingId !== null && (
+                            <p className="adm-message adm-message--info" style={{ margin: "0 0 14px" }}>
+                                Editando a <strong>{suppliers.find((supplier) => supplier.id === editingId)?.name ?? "el proveedor"}</strong>. Guarda los cambios o cancela.
+                            </p>
+                        )}
                         <div className="adm-grid">
                             <label className="adm-field">Nombre o empresa
                                 <input className="adm-input" value={supplierForm.name} maxLength={100} required disabled={isBusy}
                                     {...supplierErrors.fieldProps("name")}
-                                    onChange={(event) => updateSupplier("name", event.target.value)} />
+                                    onChange={(event) => updateSupplierField("name", event.target.value)} />
                                 <FieldError id={supplierErrors.errorId("name")} message={supplierErrors.errors.name} />
                             </label>
                             <label className="adm-field">Apellido (opcional)
                                 <input className="adm-input" value={supplierForm.lastName} maxLength={50} disabled={isBusy}
-                                    onChange={(event) => updateSupplier("lastName", event.target.value)} />
+                                    onChange={(event) => updateSupplierField("lastName", event.target.value)} />
                             </label>
-                            <label className="adm-field">Teléfono (opcional)
-                                <input className="adm-input" value={supplierForm.phone} maxLength={30} disabled={isBusy}
-                                    onChange={(event) => updateSupplier("phone", event.target.value)} />
+                            <label className="adm-field">Teléfono
+                                <input className="adm-input" type="tel" inputMode="tel" autoComplete="tel" value={supplierForm.phone} maxLength={30} required disabled={isBusy}
+                                    {...supplierErrors.fieldProps("phone")}
+                                    onChange={(event) => updateSupplierField("phone", event.target.value)} />
+                                <FieldError id={supplierErrors.errorId("phone")} message={supplierErrors.errors.phone} />
                             </label>
                             <label className="adm-field">Días de entrega
                                 <input className="adm-input" type="number" min="0" max="365" step="1" value={supplierForm.deliveryDays} required disabled={isBusy}
                                     {...supplierErrors.fieldProps("deliveryDays")}
-                                    onChange={(event) => updateSupplier("deliveryDays", event.target.value)} />
+                                    onChange={(event) => updateSupplierField("deliveryDays", event.target.value)} />
                                 <FieldError id={supplierErrors.errorId("deliveryDays")} message={supplierErrors.errors.deliveryDays} />
                             </label>
                         </div>
                         <div className="adm-actions">
-                            <button type="submit" className="adm-btn adm-btn--primary" disabled={isBusy}><Plus size={15} /> Crear proveedor</button>
+                            {editingId !== null ? (
+                                <>
+                                    <button type="submit" className="adm-btn adm-btn--primary" disabled={isBusy}><Save size={15} /> Guardar cambios</button>
+                                    <button type="button" className="adm-btn" disabled={isBusy} onClick={cancelEdit}><X size={15} /> Cancelar</button>
+                                </>
+                            ) : (
+                                <button type="submit" className="adm-btn adm-btn--primary" disabled={isBusy}><Plus size={15} /> Crear proveedor</button>
+                            )}
                         </div>
                     </form>
                     <div className="adm-table-wrap">
@@ -181,9 +243,17 @@ function AdminCatalog() {
                                         <td>{supplier.deliveryDays} días</td>
                                         <td><span className={`adm-badge ${supplier.status === "ACTIVO" ? "adm-badge--active" : "adm-badge--inactive"}`}>{supplier.status}</span></td>
                                         <td className="adm-num">
-                                            <button type="button" className="adm-btn adm-btn--sm" disabled={isBusy} onClick={() => handleToggleSupplier(supplier)}>
-                                                {supplier.status === "ACTIVO" ? "Desactivar" : "Activar"}
-                                            </button>
+                                            <div className="adm-row-actions">
+                                                <button type="button" className="adm-btn adm-btn--sm" disabled={isBusy} onClick={() => startEdit(supplier)} aria-label={`Editar ${supplier.name}`}>
+                                                    <Pencil size={13} /> Editar
+                                                </button>
+                                                <button type="button" className="adm-btn adm-btn--sm" disabled={isBusy} onClick={() => handleToggleSupplier(supplier)}>
+                                                    {supplier.status === "ACTIVO" ? "Desactivar" : "Activar"}
+                                                </button>
+                                                <button type="button" className="adm-btn adm-btn--sm adm-btn--danger-soft" disabled={isBusy} onClick={() => handleDeleteSupplier(supplier)} aria-label={`Eliminar ${supplier.name}`}>
+                                                    <Trash2 size={13} /> Eliminar
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
