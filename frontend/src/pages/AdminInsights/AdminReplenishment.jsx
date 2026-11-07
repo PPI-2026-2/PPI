@@ -78,7 +78,7 @@ function AdminReplenishment() {
             <header className="adm-heading">
                 <span>ANÁLISIS / REPOSICIÓN</span>
                 <h1>Reposición de inventario</h1>
-                <p>Qué reponer, cuánto y cuándo pedirlo para cubrir los próximos {horizon} días. Se calcula con el consumo de los últimos {days} días, el tiempo de entrega de cada proveedor, el stock mínimo, los pedidos sin confirmar y las recepciones en camino.</p>
+                <p>Qué reponer, cuánto y cuándo pedirlo para cubrir los próximos {horizon} días. Se calcula con el consumo de los últimos {days} días, el tiempo de entrega de cada proveedor, el stock mínimo, los pedidos sin confirmar y las recepciones sin confirmar.</p>
             </header>
 
             {error && <p className="adm-message adm-message--error" role="alert">{error}</p>}
@@ -147,7 +147,7 @@ function AdminReplenishment() {
                         <div className="adm-table-wrap">
                             <table className="adm-table">
                                 <thead>
-                                    <tr><th>Producto</th><th>Talla</th><th>Proveedor</th><th className="adm-num">Disponible</th><th className="adm-num">En camino</th><th className="adm-num">Consumo/día</th><th className="adm-num">Demanda {horizon} d</th><th>Se agota</th><th>Pedir antes de</th><th className="adm-num">Sugerido</th><th>Urgencia</th></tr>
+                                    <tr><th>Producto</th><th>Talla</th><th>Proveedor</th><th className="adm-num">Disponible</th><th className="adm-num">Sin confirmar</th><th className="adm-num">Consumo/día</th><th className="adm-num">Demanda {horizon} d</th><th>Se agota</th><th>Pedir antes de</th><th className="adm-num">Sugerido</th><th>Urgencia</th></tr>
                                 </thead>
                                 <tbody>
                                     {items.map((item) => (
@@ -163,8 +163,8 @@ function AdminReplenishment() {
                                             <td>{item.orderByDate && item.suggested > 0 ? (item.orderInDays <= 0 ? <strong className="ins-now">Pedir ya</strong> : <>{formatDay(item.orderByDate)}<div><small>en {item.orderInDays} días</small></div></>) : "—"}</td>
                                             <td className="adm-num">
                                                 <strong>{item.suggested}</strong>
-                                                {item.urgency === "CRITICA" && item.suggested === 0 && (
-                                                    <div className="ins-suggested-note"><small>{item.inTransit > 0 ? "Ya viene en camino" : "Sin ventas ni mínimo: define un stock mínimo"}</small></div>
+                                                {item.suggested === 0 && (item.inTransit > 0 || item.urgency === "CRITICA") && (
+                                                    <div className="ins-suggested-note"><small>{item.inTransit > 0 ? "Recibido sin confirmar" : "Sin ventas ni mínimo: define un stock mínimo"}</small></div>
                                                 )}
                                             </td>
                                             <td><UrgencyBadge value={item.urgency} /></td>
@@ -175,7 +175,7 @@ function AdminReplenishment() {
                                 </tbody>
                             </table>
                         </div>
-                        <p className="ins-note">Urgencia: crítica si no hay disponible o alcanza menos días que la entrega del proveedor; alta si ya está en el punto de reorden (el mayor entre el stock mínimo y el consumo de los días de entrega + {data?.params.safetyDays ?? 2} de seguridad). Sugerido = demanda prevista del horizonte ({horizon} días al ritmo de los últimos {days}, o del tiempo de entrega si es mayor) + stock mínimo − lo disponible y lo que ya viene en camino. Se agota = hoy + disponible ÷ consumo diario. Pedir antes de = fecha de agotamiento − días de entrega del proveedor. Las referencias sin ventas en el periodo no tienen fecha de agotamiento.</p>
+                        <p className="ins-note">Urgencia: crítica si no hay disponible o alcanza menos días que la entrega del proveedor; alta si está bajo el stock mínimo o en el punto de reorden (el mayor entre el stock mínimo y el consumo de los días de entrega + {data?.params.safetyDays ?? 2} de seguridad). Sugerido = demanda prevista del horizonte ({horizon} días al ritmo de los últimos {days}, o del tiempo de entrega si es mayor) + stock mínimo − lo disponible y lo recibido sin confirmar. Se agota = hoy + disponible ÷ consumo diario. Pedir antes de = fecha de agotamiento − días de entrega del proveedor. Las referencias sin ventas en el periodo no tienen fecha de agotamiento.</p>
                     </Card>
                 </div>
             </div>

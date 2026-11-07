@@ -13,6 +13,13 @@ export function cancelWindowMinutes() {
     return Number.isFinite(value) && value > 0 ? value : 15;
 }
 
+// Unidades ya pedidas por clientes que aún no están separadas: pedidos sin verificar y lo que le falta a los incompletos.
+// Lo que se puede pedir = stock actual - reservado - estas unidades (así dos clientes no piden las mismas unidades).
+export const pendingUnitsSql = (referenceColumn) => `NVL((SELECT SUM(DP.CANTIDAD_PEDIDO - DP.CANTIDAD_DISPONIBLE)
+                       FROM DETALLE_PEDIDO DP
+                       JOIN PEDIDO PP ON PP.ID_PEDIDO_PK = DP.ID_PEDIDO_FK
+                      WHERE DP.ID_REFERENCIA_FK = ${referenceColumn} AND PP.ESTADO IN ('PENDIENTE', 'INCOMPLETO')), 0)`;
+
 // requested: [{ referenceId, quantity }]  (ya validados por el controlador)
 // El precio NO viene del cliente: se toma de PRODUCTOS al momento del pedido y queda guardado en el detalle.
 // El pedido nace PENDIENTE; el stock se reserva cuando el empleado lo verifica en la tienda (fase 5).
@@ -32,11 +39,21 @@ export function createOrder(userId, requested) {
             return `:ref${index}`;
         });
 
+        // Dos pedidos simultáneos de la misma talla se atienden uno tras otro: el segundo ve lo que pidió el primero.
+        await connection.execute(
+            `SELECT ID_REFERENCIA_FK FROM INVENTARIO
+              WHERE ID_REFERENCIA_FK IN (${placeholders.join(", ")})
+              ORDER BY ID_REFERENCIA_FK
+                FOR UPDATE`,
+            binds,
+            OBJECT
+        );
+
         const result = await connection.execute(
             `SELECT RF.ID_REFERENCIA_PK, RF.ESTADO AS REF_ESTADO,
                     P.NOMBRE_PRODUCTO, P.ESTADO AS PROD_ESTADO, P.PRECIO,
                     T.NOMBRE_TALLA,
-                    NVL(I.CANTIDAD_ACTUAL, 0) - NVL(I.CANTIDAD_RESERVADA, 0) AS DISPONIBLE
+                    NVL(I.CANTIDAD_ACTUAL, 0) - NVL(I.CANTIDAD_RESERVADA, 0) - ${pendingUnitsSql("RF.ID_REFERENCIA_PK")} AS DISPONIBLE
                FROM REFERENCIA_PRODUCTO RF
                JOIN PRODUCTOS P ON P.ID_PRODUCTO_PK = RF.ID_PRODUCTO_FK
                JOIN TALLA T ON T.ID_TALLA_PK = RF.ID_TALLA_FK

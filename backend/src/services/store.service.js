@@ -1,8 +1,9 @@
 import { AppError } from "../utils/app-error.js";
 import { OBJECT, withConnection } from "../utils/db.js";
 import { productImageUrl } from "../utils/product-image.js";
+import { pendingUnitsSql } from "./orders.service.js";
 
-// Tienda pública: solo lectura. Lo disponible = CANTIDAD_ACTUAL - CANTIDAD_RESERVADA (misma regla del inventario).
+// Tienda pública: solo lectura. Lo que se puede pedir = CANTIDAD_ACTUAL - CANTIDAD_RESERVADA - unidades ya pedidas sin separar.
 const MAX_PER_ORDER = 10;
 
 function toStoreProduct(row) {
@@ -24,7 +25,7 @@ function compareSizes(a, b) {
 }
 
 function toStoreSize(row) {
-    const available = Math.max(0, (row.CANTIDAD_ACTUAL ?? 0) - (row.CANTIDAD_RESERVADA ?? 0));
+    const available = Math.max(0, (row.CANTIDAD_ACTUAL ?? 0) - (row.CANTIDAD_RESERVADA ?? 0) - row.PENDIENTES);
     return {
         referenceId: row.ID_REFERENCIA_PK,
         sizeName: row.NOMBRE_TALLA,
@@ -46,7 +47,7 @@ export function listStoreProducts() {
                               JOIN INVENTARIO I ON I.ID_REFERENCIA_FK = R.ID_REFERENCIA_PK
                              WHERE R.ID_PRODUCTO_FK = P.ID_PRODUCTO_PK
                                AND R.ESTADO = 'ACTIVO'
-                               AND I.CANTIDAD_ACTUAL - I.CANTIDAD_RESERVADA > 0)
+                               AND I.CANTIDAD_ACTUAL - I.CANTIDAD_RESERVADA - ${pendingUnitsSql("I.ID_REFERENCIA_FK")} > 0)
               ORDER BY P.NOMBRE_PRODUCTO`,
             {},
             OBJECT
@@ -69,7 +70,8 @@ export function getStoreProduct(id) {
         if (!row) throw new AppError("El producto no existe o no está disponible.", 404);
 
         const sizeResult = await connection.execute(
-            `SELECT R.ID_REFERENCIA_PK, T.NOMBRE_TALLA, I.CANTIDAD_ACTUAL, I.CANTIDAD_RESERVADA
+            `SELECT R.ID_REFERENCIA_PK, T.NOMBRE_TALLA, I.CANTIDAD_ACTUAL, I.CANTIDAD_RESERVADA,
+                    ${pendingUnitsSql("R.ID_REFERENCIA_PK")} AS PENDIENTES
                FROM REFERENCIA_PRODUCTO R
                JOIN TALLA T ON T.ID_TALLA_PK = R.ID_TALLA_FK
                LEFT JOIN INVENTARIO I ON I.ID_REFERENCIA_FK = R.ID_REFERENCIA_PK

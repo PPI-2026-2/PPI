@@ -132,7 +132,7 @@ function AdminSales() {
                 ) : <p className="viz-empty">{isLoading ? "Cargando…" : "Sin datos."}</p>}
                 <div className="adm-table-wrap">
                     <table className="adm-table">
-                        <thead><tr><th>Producto</th><th className="adm-num">Ritmo/día</th><th className="adm-num">Demanda {horizon} d</th><th className="adm-num">Disponible</th><th className="adm-num">En camino</th><th>Estado</th></tr></thead>
+                        <thead><tr><th>Producto</th><th className="adm-num">Ritmo/día</th><th className="adm-num">Demanda {horizon} d</th><th className="adm-num">Disponible</th><th className="adm-num">Sin confirmar</th><th>Estado</th></tr></thead>
                         <tbody>
                             {(data?.forecast.products ?? []).map((product) => (
                                 <tr key={product.name}>
@@ -152,7 +152,7 @@ function AdminSales() {
                 </div>
             </Card>
 
-            <Card title="Recomendaciones de compra" subtitle={`Para los próximos ${horizon} días, calculadas con las ventas, el stock, lo que ya viene en camino y los pedidos que no se pudieron completar`}>
+            <Card title="Recomendaciones de compra" subtitle={`Para los próximos ${horizon} días, calculadas con las ventas, el stock, lo recibido sin confirmar y los pedidos que no se pudieron completar`}>
                 {data && data.recommendations.length === 0 && <p className="viz-empty">Por ahora no hay recomendaciones: el stock cubre la demanda.</p>}
                 <ul className="ins-reco">
                     {(data?.recommendations ?? []).map((item, index) => {

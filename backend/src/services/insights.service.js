@@ -98,7 +98,7 @@ async function loadReferences(connection, days) {
 // Regla de reposición para una referencia.
 //   consumo diario  = salidas del periodo / días del periodo
 //   disponible      = stock actual - reservado
-//   proyectado      = disponible - pedidos aún sin confirmar + recepciones registradas sin confirmar
+//   proyectado      = disponible - pedidos aún sin confirmar + mercancía recibida sin confirmar (recepciones REGISTRADAS)
 //   punto de reorden= el mayor entre el stock mínimo y consumo diario x (días de entrega + días de seguridad)
 //   objetivo        = punto de reorden + consumo diario x días de cobertura
 //   sugerido        = si proyectado <= punto de reorden: objetivo - proyectado (nunca negativo)
@@ -125,7 +125,8 @@ function analyze(row, days, settings, horizon = null) {
 
     let urgency = "NORMAL";
     if (available <= 0 || (coverageDays !== null && coverageDays < row.DIAS_ENTREGA)) urgency = "CRITICA";
-    else if (projected <= reorderPoint) urgency = "ALTA";
+    // Lo recibido sin confirmar no se puede pedir todavía: bajo el mínimo sigue siendo urgente aunque ya haya llegado.
+    else if (projected <= reorderPoint || (row.MINIMO > 0 && available <= row.MINIMO)) urgency = "ALTA";
 
     return {
         referenceId: row.ID_REFERENCIA_PK,
@@ -451,7 +452,7 @@ export function getSales({ days, horizon = DEFAULT_HORIZON } = {}) {
             recommendations.push({
                 type: "REPONER",
                 title: `Pedir ${ref.suggested} u. de ${ref.productName} talla ${ref.sizeName}`,
-                detail: `A ${String(ref.dailyUse).replace(".", ",")} u./día se venderán ~${ref.horizonDemand} u. en ${horizon} días y tienes ${ref.available} disponibles${ref.inTransit ? ` (+${ref.inTransit} en camino)` : ""}. Se agota hacia el ${formatDay(ref.stockoutDate)}; el proveedor tarda ${ref.leadDays} días, ${when}.`,
+                detail: `A ${String(ref.dailyUse).replace(".", ",")} u./día se venderán ~${ref.horizonDemand} u. en ${horizon} días y tienes ${ref.available} disponibles${ref.inTransit ? ` (+${ref.inTransit} recibidas sin confirmar)` : ""}. Se agota hacia el ${formatDay(ref.stockoutDate)}; el proveedor tarda ${ref.leadDays} días, ${when}.`,
                 path: "/administrador/reposicion"
             });
         }
@@ -523,7 +524,7 @@ export function getAlerts() {
                 id: "sold-out", severity: "CRITICA", type: "INVENTARIO", count: soldOut.length,
                 title: `${plural(soldOut.length, "referencia agotada", "referencias agotadas")}`,
                 detail: `Sin unidades disponibles: ${sample(soldOut, (ref) => `${ref.productName} ${ref.sizeName}`)}.`,
-                path: "/administrador/inventario"
+                path: "/administrador/reposicion"
             });
         }
         const reorder = references.filter((ref) => ref.available > 0 && ref.urgency !== "NORMAL");
@@ -531,7 +532,7 @@ export function getAlerts() {
             alerts.push({
                 id: "reorder", severity: reorder.some((ref) => ref.urgency === "CRITICA") ? "ALTA" : "MEDIA", type: "REPOSICION", count: reorder.length,
                 title: `${plural(reorder.length, "referencia", "referencias")} por reponer`,
-                detail: `Llegaron al punto de reorden: ${sample(reorder, (ref) => `${ref.productName} ${ref.sizeName}`)}.`,
+                detail: `Bajo el stock mínimo o en el punto de reorden: ${sample(reorder, (ref) => `${ref.productName} ${ref.sizeName}`)}.`,
                 path: "/administrador/reposicion"
             });
         }

@@ -82,7 +82,7 @@ function AdminBehavior() {
                 {data && data.forecast.stockouts.length > 0 && (
                     <div className="adm-table-wrap">
                         <table className="adm-table">
-                            <thead><tr><th>Producto</th><th className="adm-num">Disponible</th><th className="adm-num">En camino</th><th className="adm-num">Ritmo/día</th><th>Se agota</th><th>Estado</th></tr></thead>
+                            <thead><tr><th>Producto</th><th className="adm-num">Disponible</th><th className="adm-num">Sin confirmar</th><th className="adm-num">Ritmo/día</th><th>Se agota</th><th>Estado</th></tr></thead>
                             <tbody>
                                 {data.forecast.stockouts.map((entry) => (
                                     <tr key={entry.name}>
