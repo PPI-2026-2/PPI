@@ -46,7 +46,7 @@
 | GET | `/pedidos` | | Historial propio |
 | GET | `/pedidos/notificaciones` | | Avisos de la tienda de los últimos 30 días |
 | POST | `/pedidos` | `items: [{ referenceId, quantity }]` | Crea el pedido; el precio sale de la base. Hasta 10 por talla |
-| POST | `/pedidos/:id/cancelar` | | Cancela un pedido propio dentro de la ventana |
+| POST | `/pedidos/:id/cancelar` | | Cancela un pedido propio: dentro de la ventana o, si está INCOMPLETO, en cualquier momento. Libera lo separado |
 
 </details>
 

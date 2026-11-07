@@ -166,7 +166,7 @@ export function listMyOrders(userId) {
         return orderResult.rows.map((row) => {
             const items = itemsByOrder.get(row.ID_PEDIDO_PK) ?? [];
             const secondsLeft = Math.max(0, Math.ceil(windowSeconds - row.TRANSCURRIDO));
-            const cancellable = ["PENDIENTE", "INCOMPLETO", "COMPLETO"].includes(row.ESTADO) && secondsLeft > 0;
+            const inWindow = ["PENDIENTE", "COMPLETO"].includes(row.ESTADO) && secondsLeft > 0;
             return {
                 id: row.ID_PEDIDO_PK,
                 code: orderCode(row.ID_PEDIDO_PK),
@@ -176,8 +176,9 @@ export function listMyOrders(userId) {
                 total: items.reduce((sum, item) => sum + item.subtotal, 0),
                 confirmedTotal: items.reduce((sum, item) => sum + item.confirmed * item.unitPrice, 0),
                 incompleteReason: row.ESTADO === "INCOMPLETO" ? row.MOTIVO ?? "" : "",
-                canCancel: cancellable,
-                cancelSecondsLeft: cancellable ? secondsLeft : 0,
+                // Un incompleto se puede cancelar siempre, sin cuenta regresiva.
+                canCancel: inWindow || row.ESTADO === "INCOMPLETO",
+                cancelSecondsLeft: inWindow ? secondsLeft : 0,
                 items
             };
         });

@@ -20,6 +20,7 @@ flowchart LR
     subgraph C["USUARIO (cliente)"]
         C1[Explora el catálogo] --> C2[Arma el carrito] --> C3[Confirma el pedido]
         C3 --> C4["Puede cancelar<br/>15 minutos"]
+        C5["Espera, con aviso en la campana,<br/>o cancela"]
     end
     subgraph E["EMPLEADO"]
         E1[Ve pedidos por revisar] --> E2["Verifica en tienda<br/>y separa unidades"]
@@ -34,6 +35,7 @@ flowchart LR
         A2 -- No --> A4[La alerta sigue abierta]
     end
     C3 --> E1
+    E5 -->|Motivo en Mis pedidos y en la campana| C5
     E6 --> A1
     A3 -->|El stock sube y el producto vuelve a la tienda| C1
 ```
@@ -57,8 +59,8 @@ flowchart LR
 | Disponible para el administrador | Stock actual − reservado |
 | Disponible en la tienda | Stock actual − reservado − unidades ya pedidas y aún sin separar |
 | Reserva | Ocurre cuando el empleado verifica el pedido |
-| Cancelación | El cliente, dentro de 15 minutos. El administrador, los pedidos "Sin reclamar" (más de 4 días) y los incompletos, con motivo. El empleado nunca cancela |
-| Pedido incompleto | Refleja una diferencia entre el sistema y lo físico; el empleado lo confirma |
+| Cancelación | El cliente, dentro de 15 minutos, o en cualquier momento si su pedido quedó incompleto. El administrador, los pedidos "Sin reclamar" (más de 4 días) y los incompletos, con motivo. El empleado nunca cancela |
+| Pedido incompleto | Refleja una diferencia entre el sistema y lo físico; el empleado lo confirma con un motivo. El cliente lo ve y decide: espera, y la campana le avisa cuando esté listo, o lo cancela |
 | Sesión | El token dura 30 minutos y se renueva con el uso; 20 minutos sin actividad cierran la sesión |
 | Cuenta desactivada | No puede entrar y pierde de inmediato su sesión abierta |
 

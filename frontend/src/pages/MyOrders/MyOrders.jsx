@@ -97,7 +97,7 @@ function MyOrders() {
                 <header className="my-orders__header">
                     <span>STOCKPLAN / MIS PEDIDOS</span>
                     <h1>Historial de pedidos</h1>
-                    <p>Puedes cancelar un pedido durante los primeros {windowMinutes} minutos. Después, la tienda lo verifica y aquí mismo, en esta página y en la campana, verás si queda incompleto o listo para reclamar. Revísala durante las 72 horas siguientes a tu pedido.</p>
+                    <p>Puedes cancelar un pedido durante los primeros {windowMinutes} minutos. Después, la tienda lo verifica y aquí mismo, en esta página y en la campana, verás si queda incompleto o listo para reclamar. Si queda incompleto, puedes esperar o cancelarlo cuando quieras. Revisa esta página durante las 72 horas siguientes a tu pedido.</p>
                 </header>
 
                 {actionMessage && <p className={`my-orders__notice ${actionIsError ? "my-orders__notice--error" : ""}`} role={actionIsError ? "alert" : "status"}>{actionMessage}</p>}
@@ -110,7 +110,8 @@ function MyOrders() {
                 <div className="my-orders__list">
                     {orders.map((order) => {
                         const remaining = secondsLeft[order.id] ?? 0;
-                        const canCancel = order.canCancel && remaining > 0;
+                        const isIncomplete = order.status === "INCOMPLETO";
+                        const canCancel = order.canCancel && (isIncomplete || remaining > 0);
                         return (
                             <article className="my-orders__card" key={order.id}>
                                 <div className="my-orders__top">
@@ -133,7 +134,7 @@ function MyOrders() {
                                 </ul>
 
                                 {order.status === "INCOMPLETO" && (
-                                    <p className="my-orders__reason"><strong>Pedido incompleto:</strong> {order.incompleteReason || "Faltan productos en el inventario."} Tu pedido sigue en espera de inventario: aquí verás el cambio cuando la tienda lo complete.</p>
+                                    <p className="my-orders__reason"><strong>Pedido incompleto:</strong> {order.incompleteReason || "Faltan productos en el inventario."} Puedes esperar a que lleguen más unidades: te avisaremos en la campana cuando esté listo para reclamar. Si no quieres esperar, puedes cancelarlo.</p>
                                 )}
                                 {STATUS_HINT[order.status] && <p className="my-orders__hint">{STATUS_HINT[order.status]}{order.status === "RECLAMADO" && order.deliveredAt ? ` (${dateFormat.format(new Date(order.deliveredAt))})` : ""}</p>}
 
@@ -148,7 +149,7 @@ function MyOrders() {
                                             </div>
                                         ) : (
                                             <div className="my-orders__cancel">
-                                                <span><Clock3 size={14} /> Puedes cancelar: {formatCountdown(remaining)}</span>
+                                                {!isIncomplete && <span><Clock3 size={14} /> Puedes cancelar: {formatCountdown(remaining)}</span>}
                                                 <button type="button" onClick={() => setConfirmingId(order.id)} disabled={busyId === order.id}>{busyId === order.id ? "Cancelando..." : "Cancelar pedido"}</button>
                                             </div>
                                         )

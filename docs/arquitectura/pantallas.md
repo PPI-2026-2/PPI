@@ -23,7 +23,7 @@ flowchart LR
 | Login (`/login`) | `auth.loginRequest` | `POST /auth/login` | USUARIO, ROL |
 | Carrito (`/carrito`) | `orders.createOrder` | `POST /pedidos` | INVENTARIO, PRODUCTOS, PEDIDO, DETALLE_PEDIDO |
 | Mis pedidos (`/mis-pedidos`) | `orders.getMyOrders` | `GET /pedidos` | PEDIDO, DETALLE_PEDIDO, PROCESO_PEDIDO |
-| Cancelar pedido | `orders.cancelMyOrder` | `POST /pedidos/:id/cancelar` | PEDIDO, DETALLE_PEDIDO, INVENTARIO, PROCESO_PEDIDO |
+| Cancelar pedido, dentro de la ventana o si quedó incompleto | `orders.cancelMyOrder` | `POST /pedidos/:id/cancelar` | PEDIDO, DETALLE_PEDIDO, INVENTARIO, PROCESO_PEDIDO |
 | Campana de avisos | `orders.getMyNotifications` | `GET /pedidos/notificaciones` | PROCESO_PEDIDO, PEDIDO |
 
 El carrito se guarda en el navegador (`data/shoppingCart.js`) y solo llega a Oracle al confirmar el pedido.

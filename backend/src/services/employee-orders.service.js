@@ -7,6 +7,7 @@ import { cancelWindowMinutes, orderCode } from "./orders.service.js";
 //   PENDIENTE --(pasan los minutos de cancelación del cliente)--> verificar --> COMPLETO | INCOMPLETO
 //   INCOMPLETO --volver a verificar--> COMPLETO | INCOMPLETO       COMPLETO --entregar (reclamado)--> RECLAMADO
 //   (PENDIENTE | INCOMPLETO | COMPLETO) --cancelar (solo el cliente dueño y dentro de su plazo; el empleado no cancela)--> CANCELADO
+//   INCOMPLETO --cancelar (el cliente dueño, en cualquier momento: decide si espera o no)--> CANCELADO
 // Cada vez que un pedido queda COMPLETO o INCOMPLETO se envía un correo al cliente.
 // Verificar = el empleado confirma por línea cuántas unidades hay en tienda; esas unidades se RESERVAN.
 // Entregar  = baja el stock real y lo reservado, y deja un movimiento SALIDA_PEDIDO por línea.
@@ -343,15 +344,17 @@ async function releaseAndCancel(connection, orderId, userId, observation) {
     await logProcess(connection, orderId, userId, "CANCELADO", observation);
 }
 
-// Cancelación por el cliente dueño del pedido, solo dentro del plazo (por defecto 15 minutos desde que lo hizo).
+// Cancelación por el cliente dueño del pedido, dentro del plazo (por defecto 15 minutos desde que lo hizo).
+// Un pedido INCOMPLETO se puede cancelar en cualquier momento: el cliente ya recibió el motivo y decide si sigue esperando.
 export function cancelOrderAsCustomer(orderId, userId) {
     return withTransaction(async (connection) => {
         const locked = await lockOrder(connection, orderId, ["PENDIENTE", "INCOMPLETO", "COMPLETO"], "cancelar");
         if (locked.ownerId !== userId) throw new AppError("El pedido no existe.", 404);
-        if (locked.elapsedSeconds >= cancelWindowMinutes() * 60) {
+        const isIncomplete = locked.status === "INCOMPLETO";
+        if (!isIncomplete && locked.elapsedSeconds >= cancelWindowMinutes() * 60) {
             throw new AppError(`Ya pasaron los ${cancelWindowMinutes()} minutos para cancelar: el pedido está en verificación en tienda.`, 409);
         }
-        await releaseAndCancel(connection, orderId, userId, "Cancelado por el cliente.");
+        await releaseAndCancel(connection, orderId, userId, isIncomplete ? "Cancelado por el cliente: pedido incompleto." : "Cancelado por el cliente.");
         return { id: orderId, code: orderCode(orderId), status: "CANCELADO" };
     });
 }
